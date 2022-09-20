@@ -8,9 +8,10 @@ arch=("x86_64")
 url="https://nwjs.io/"
 license=("MIT")
 depends=(
-	"gtk3"
-	"nss"
-	"libxss")
+  "gtk3"
+  "nss"
+  "libxss"
+)
 optdepends=(
   "nodejs: npm package support"
   "nw-gyp: native add-on build tool for node-webkit"
@@ -18,8 +19,9 @@ optdepends=(
 provides=("nwjs" "node-webkit")
 replaces=("node-webkit")
 conflicts=(
-	"nwjs-bin"
-	"node-webkit")
+  "nwjs-bin"
+  "node-webkit"
+)
 source=("${pkgname}-${pkgver}.tar.gz::http://dl.nwjs.io/v${pkgver}/${pkgname%-bin}-v${pkgver}-linux-x64.tar.gz")
 md5sums=('a390e413b700ad710e0db4e09cb0070b')
 
