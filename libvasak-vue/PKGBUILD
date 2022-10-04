@@ -1,0 +1,24 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=libvasak-vue
+pkgver=3.2.40
+pkgrel=1
+pkgdesc="Vue.js lib for VasakOS"
+arch=('any')
+url="https://vuejs.org/"
+license=('MIT')
+source=(
+    "https://cdnjs.cloudflare.com/ajax/libs/vue/$pkgver/vue.esm-browser.min.js"
+    "https://cdnjs.cloudflare.com/ajax/libs/vue/$pkgver/vue.esm-browser.prod.min.js"
+)
+md5sums=(
+    '8c14e7c4f2673c56a8c85f65897f0d87'
+    'b3f89f0b412c2c3c1787aef306d44d71'
+)
+
+package() {
+    install -d ${pkgdir}/usr/lib/${pkgname}/
+    for _jsfile in ./*; do
+        install -m0644 "${_jsfile}" "${pkgdir}/usr/lib/${pkgname}/"
+    done
+}
