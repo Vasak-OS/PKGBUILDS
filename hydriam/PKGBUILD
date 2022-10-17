@@ -1,0 +1,36 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=hydriam
+pkgver=0.0.7
+pkgrel=1
+pkgdesc="App menu for Vasak OS"
+url="https://github.com/Vasak-OS/$pkgname/"
+depends=(
+    'nwjs'
+    'bootstrap'
+    'libvasak-ui'
+    'libvasak-vue'
+    'hydriam-data'
+    'gnome-menus'
+    'python-dbus'
+    'python-gobject'
+    'gtk3'
+    'pyside2'
+)
+makedepends=(
+    'nodejs'
+    'npm'
+)
+license=('GPL')
+arch=('x86_64')
+md5sums=('cdd24d3ddd4de13b2e3ff97bff804aa9')
+source=("$url/archive/refs/tags/$pkgver.tar.gz")
+
+package() {
+    cd $pkgname-$pkgver
+    install -dm755 $pkgdir/usr/share/$pkgname/
+    cp -r $srcdir/$pkgname-$pkgver/* $pkgdir/usr/share/$pkgname/
+    cd $pkgdir/usr/share/$pkgname/ && npm i
+    chmod a+x $pkgdir/usr/share/$pkgname/$pkgname
+    sudo ln -sf /usr/share/$pkgname/$pkgname /bin/$pkgname
+}
