@@ -34,5 +34,5 @@ package() {
     cp -r $srcdir/$pkgname-$pkgver/* $pkgdir/usr/share/$pkgname/
     cd $pkgdir/usr/share/$pkgname/ && npm i
     chmod a+x $pkgdir/usr/share/$pkgname/$pkgname
-    sudo ln -sf /usr/share/$pkgname/$pkgname /bin/$pkgname
+    sudo ln -sf /usr/share/$pkgname/$pkgname $pkgdir/bin/$pkgname
 }
