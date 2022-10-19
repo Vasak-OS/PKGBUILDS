@@ -1,0 +1,5 @@
+post_install() {
+    echo "IMPORTANT:"
+    echo "USE: pawns-cli -email=email@example.com -password=change_me -device-name=raspberrypi -accept-tos"
+    echo "REGISTER: https://pawns.app?r=313854"
+}
