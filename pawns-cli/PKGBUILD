@@ -12,6 +12,6 @@ install='use.install'
 
 package() {
     install -d "${pkgdir}/usr/bin"
-    mv ${pkgname} "${pkgdir}/usr/bin/${pkgname}"
+    cp ${pkgname} "${pkgdir}/usr/bin/${pkgname}"
     chmod 755 "${pkgdir}/usr/bin/${pkgname}"
 }
