@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop
-pkgver=0.2.9
+pkgver=0.2.10
 pkgrel=1
 pkgdesc="Desktop for VasakOS"
 url="https://github.com/Vasak-OS/$pkgname/"
@@ -14,10 +14,6 @@ depends=(
     'navale'
     'libvasak-ui'
     'libvasak-vue'
-    'gnome-menus'
-    'python-dbus'
-    'python-gobject'
-    'libxkbcommon-x11'
 )
 makedepends=(
     'nodejs'
@@ -25,14 +21,15 @@ makedepends=(
 )
 license=('GPL')
 arch=('x86_64')
-md5sums=('5a3cd7ef4b52fbc7a142ce031dbd502d')
+md5sums=('1abe5f9019c76d69c14f2359b0b7079b')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
 
 package() {
     cd $pkgname-$pkgver
-    install -dm755 $pkgdir/usr/share/$pkgname/
-    cp -r $srcdir/$pkgname-$pkgver/* $pkgdir/usr/share/$pkgname/
-    cd $pkgdir/usr/share/$pkgname/ && npm i
-    chmod a+x $pkgdir/usr/share/$pkgname/$pkgname
-    sudo ln -sf /usr/share/$pkgname/$pkgname $pkgdir/bin/$pkgname
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/"
+    install -d "${pkgdir}/usr/bin"
+    cp -r ${srcdir}/${pkgname}-${pkgver}/* "${pkgdir}/usr/share/${pkgname}/"
+    cd "${pkgdir}/usr/share/${pkgname}/" && npm i
+    chmod a+x "${pkgdir}/usr/share/${pkgname}/${pkgname}"
+    sudo ln -sf "/usr/share/${pkgname}/${pkgname}" "${pkgdir}/usr/bin"
 }
