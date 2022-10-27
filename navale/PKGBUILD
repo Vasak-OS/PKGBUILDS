@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=navale
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 pkgdesc="Task Bar for Vasak OS"
 url="https://github.com/Vasak-OS/$pkgname/"
@@ -21,7 +21,7 @@ makedepends=(
 )
 license=('GPL')
 arch=('x86_64')
-md5sums=('f58abe58a8f4db8ccefa1ab06f0e23f8')
+md5sums=('53ce6dae19636ab799a995d3b45453e1')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
 
 package() {
