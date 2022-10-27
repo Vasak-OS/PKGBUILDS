@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop
-pkgver=0.2.10
+pkgver=0.2.11
 pkgrel=1
 pkgdesc="Desktop for VasakOS"
 url="https://github.com/Vasak-OS/$pkgname/"
@@ -21,7 +21,7 @@ makedepends=(
 )
 license=('GPL')
 arch=('x86_64')
-md5sums=('1abe5f9019c76d69c14f2359b0b7079b')
+md5sums=('807dc918b5decf34612051906e4588a5')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
 
 package() {
