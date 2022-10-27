@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-service
-pkgver=0.1.4
+pkgver=0.1.5
 pkgrel=1
 pkgdesc="DBus service for VasakOS"
 url="https://github.com/Vasak-OS/$pkgname/"
@@ -15,7 +15,7 @@ depends=(
 )
 license=('GPL')
 arch=('x86_64')
-md5sums=('0c1e7517e60eca306055ff0e5267f607')
+md5sums=('d6f287e7ea0b0d85dab5c5f9974bbec7')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
 
 package() {
