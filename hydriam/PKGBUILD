@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=hydriam
-pkgver=0.0.8
+pkgver=0.0.9
 pkgrel=1
 pkgdesc="App menu for Vasak OS"
 url="https://github.com/Vasak-OS/$pkgname/"
@@ -23,7 +23,7 @@ makedepends=(
 )
 license=('GPL')
 arch=('x86_64')
-md5sums=('6688b6551ca192cc717bff1c9d263ed5')
+md5sums=('21619923acdfecce13c0cfaa6bbbce0a')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
 
 package() {
