@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-gala
-pkgver=6.3.2
+pkgver=6.3.3
 pkgrel=1
 pkgdesc='The Pantheon Window Manager edit for VasakOS'
 arch=(x86_64)
