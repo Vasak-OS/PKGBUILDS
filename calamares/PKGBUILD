@@ -1,64 +1,83 @@
 pkgname=calamares
 pkgver=3.2.61
 pkgrel=1
+_commit=8a6b3d19e17d5a92d0ad8f743c55965f03ff9fac
 pkgdesc='Distribution-independent installer framework'
-arch=('i686' 'x86_64')
+arch=('x86_64')
 license=(GPL)
-url="https://github.com/calamares/calamares"
+url="https://github.com/Vasak-OS/calamares/"
 license=('LGPL')
 conflicts=('calamares')
 provides=('calamares')
-depends=('kconfig' 'kcoreaddons' 'kiconthemes' 'ki18n' 'kio' 'solid' 'yaml-cpp' 'kpmcore' 'mkinitcpio-openswap'
-         'boost-libs' 'ckbcomp' 'hwinfo' 'qt5-svg' 'polkit-qt5' 'gtk-update-icon-cache' 'plasma-framework'
-         'qt5-xmlpatterns' 'squashfs-tools' 'libpwquality' 'appstream-qt' 'python')
-makedepends=('extra-cmake-modules' 'qt5-tools' 'qt5-translations' 'git' 'boost')
-# backup=('usr/share/calamares/modules/bootloader.conf'
-#         'usr/share/calamares/modules/displaymanager.conf'
-#         'usr/share/calamares/modules/initcpio.conf'
-#         'usr/share/calamares/modules/unpackfs.conf')
+depends=('kconfig' 'kcoreaddons' 'kiconthemes' 'ki18n' 'kio' 'solid' 'yaml-cpp' 'kpmcore>=22.04.0' 'mkinitcpio-openswap'
+        'boost-libs' 'ckbcomp' 'hwinfo' 'qt5-svg' 'polkit-qt5' 'gtk-update-icon-cache' 'plasma-framework'
+        'qt5-xmlpatterns' 'squashfs-tools' 'libpwquality' 'appstream-qt' 'icu' 'python' 'qt5-webview'
+        'ttf-comfortaa')
+makedepends=('extra-cmake-modules' 'qt5-tools' 'qt5-translations' 'git' 'boost' 'kparts' 'kdbusaddons')
+backup=('usr/share/calamares/modules/bootloader.conf'
+        'usr/share/calamares/modules/displaymanager.conf'
+        'usr/share/calamares/modules/initcpio.conf'
+        'usr/share/calamares/modules/unpackfs.conf')
 
-source+=("calamares-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('35fd3f2fed96e444465507bdafee6a982c0f9a6c4c7759e70234d49093743b04')
+source+=("$url/archive/refs/tags/$pkgver.tar.gz")
+sha256sums=('f3623a3aac86b9afce2ebddbf086c43f62f7e7c9629f74678576189f7ceadd5b')
 
 prepare() {
-        #mv ${srcdir}/calamares-${_commit} ${srcdir}/calamares-${pkgver}
-        #mv ${srcdir}/calamares-v${pkgver} ${srcdir}/calamares-${pkgver}
         cd ${srcdir}/calamares-${pkgver}
         sed -i -e 's/"Install configuration files" OFF/"Install configuration files" ON/' CMakeLists.txt
-        	# change version
-	#_ver="$(cat CMakeLists.txt | grep -m3 -e "  VERSION" | grep -o "[[:digit:]]*" | xargs | sed s'/ /./g')"
-	_ver="$pkgver"
-	printf 'Version: %s-%s' "${_ver}" "${pkgrel}"
-	sed -i -e "s|\${CALAMARES_VERSION_MAJOR}.\${CALAMARES_VERSION_MINOR}.\${CALAMARES_VERSION_PATCH}|${_ver}-${pkgrel}|g" CMakeLists.txt
-	sed -i -e "s|CALAMARES_VERSION_RC 1|CALAMARES_VERSION_RC 0|g" CMakeLists.txt
+
+        _ver="$pkgver"
+        printf 'Version: %s-%s' "${_ver}" "${pkgrel}"
+        echo ""
+        sed -i -e "s|\${CALAMARES_VERSION_MAJOR}.\${CALAMARES_VERSION_MINOR}.\${CALAMARES_VERSION_PATCH}|${_ver}-${pkgrel}|g" CMakeLists.txt
+        sed -i -e "s|CALAMARES_VERSION_RC 1|CALAMARES_VERSION_RC 0|g" CMakeLists.txt
+
+        # https://github.com/calamares/calamares/issues/2014
+        sed -i -e 's|"$@"|"-D6" "$@"|g' data/calamares_polkit
+
+        # change branding
+        sed -i -e "s/default/vasak/g" src/branding/CMakeLists.txt
+
+        # https://github.com/calamares/calamares/issues/1945
+        # patch -Np1 -i ../b140b67c9fddb96701e46d23e9a72ddfbe77e0d0.patch
+
 }
 
-
 build() {
-	cd ${srcdir}/calamares-${pkgver}
+        cd ${srcdir}/calamares-${pkgver}
+        # rm -r ./src/branding/manjaro/
 
-	mkdir -p build
-	cd build
+        mkdir -p build
+        cd build
         cmake .. \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX=/usr \
-              -DCMAKE_INSTALL_LIBDIR=lib \
-              -DWITH_PYTHONQT:BOOL=ON \
-              -DBoost_NO_BOOST_CMAKE=ON \
-              -DSKIP_MODULES="webview interactiveterminal initramfs \
-                              initramfscfg dracut dracutlukscfg \
-                              dummyprocess dummypython dummycpp \
-                              dummypythonqt services-openrc"
+                -DCMAKE_BUILD_TYPE=Debug \
+                -DCMAKE_INSTALL_PREFIX=/usr \
+                -DCMAKE_INSTALL_LIBDIR=lib \
+                -DWITH_KF5DBus=OFF \
+                -DBoost_NO_BOOST_CMAKE=ON \
+                -DSKIP_MODULES="initramfs initramfscfg \
+                              dummyprocess dummypython \
+                              dummycpp dummypythonqt \
+                              services-openrc"
         make
 }
 
 package() {
-	cd ${srcdir}/calamares-${pkgver}/build
-	make DESTDIR="$pkgdir" install
+        cd ${srcdir}/calamares-${pkgver}/build
+        make DESTDIR="$pkgdir" install
+        install -Dm644 "../data/manjaro-icon.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/calamares.svg"
+        install -Dm644 "../data/calamares.desktop" "$pkgdir/usr/share/applications/calamares.desktop"
+        install -Dm755 "../data/calamares_polkit" "$pkgdir/usr/bin/calamares_polkit"
+        install -Dm644 "../data/49-nopasswd-calamares.rules" "$pkgdir/etc/polkit-1/rules.d/49-nopasswd-calamares.rules"
+        chmod 750 "$pkgdir"/etc/polkit-1/rules.d
 
-	# rename services-systemd back to services
-	mv "$pkgdir/usr/lib/calamares/modules/services-systemd" "$pkgdir/usr/lib/calamares/modules/services"
-	mv "$pkgdir/usr/share/calamares/modules/services-systemd.conf" "$pkgdir/usr/share/calamares/modules/services.conf"
-	sed -i -e 's/-systemd//' "$pkgdir/usr/lib/calamares/modules/services/module.desc"
-	sed -i -e 's/-systemd//' "$pkgdir/usr/share/calamares/settings.conf"
+        # rename services-systemd back to services
+        mv "$pkgdir/usr/lib/calamares/modules/services-systemd" "$pkgdir/usr/lib/calamares/modules/services"
+        mv "$pkgdir/usr/share/calamares/modules/services-systemd.conf" "$pkgdir/usr/share/calamares/modules/services.conf"
+        sed -i -e 's/-systemd//' "$pkgdir/usr/lib/calamares/modules/services/module.desc"
+        sed -i -e 's/-systemd//' "$pkgdir/usr/share/calamares/settings.conf"
+
+        # fix branding install
+        cp -av "../src/branding/vasak" "$pkgdir/usr/share/calamares/branding/"
+
 }
