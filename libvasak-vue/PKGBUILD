@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=libvasak-vue
-pkgver=3.2.40
+pkgver=3.2.47
 pkgrel=1
 pkgdesc="Vue.js lib for VasakOS"
 arch=('any')
@@ -12,8 +12,8 @@ source=(
     "https://cdnjs.cloudflare.com/ajax/libs/vue/$pkgver/vue.esm-browser.prod.min.js"
 )
 md5sums=(
-    '8c14e7c4f2673c56a8c85f65897f0d87'
-    'b3f89f0b412c2c3c1787aef306d44d71'
+    'fe88512d3a1b37b7785cdf0f573b2be8'
+    '05943eaa18110ad3a3c3227050c3f5b5'
 )
 
 package() {
