@@ -19,7 +19,6 @@ depends=(
 )
 makedepends=(
     'nodejs'
-    'npm'
 )
 license=('GPL')
 arch=('x86_64')

@@ -14,9 +14,8 @@ depends=(
     'dex'
     'dunst'
     'polkit-gnome'
-    #'hydriam-data'
+    'hydriam-data'
     #'lynx-gtk-theme'
-    #'lynx-gala'
     'python-yaml'
 )
 
