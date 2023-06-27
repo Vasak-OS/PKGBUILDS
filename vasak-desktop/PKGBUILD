@@ -1,14 +1,13 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop
-pkgver=0.2.11
+pkgver=0.2.12
 pkgrel=1
 pkgdesc="Desktop for VasakOS"
 url="https://github.com/Vasak-OS/$pkgname/"
 depends=(
     'nwjs'
     'nwjs-ffmpeg-codecs'
-    'vasak-desktop-service'
     'vasak-desktop-settings'
     'bootstrap'
     'navale'
@@ -20,7 +19,7 @@ makedepends=(
 )
 license=('GPL')
 arch=('x86_64')
-md5sums=('807dc918b5decf34612051906e4588a5')
+md5sums=('e68ef8121bd65a7fc2fa207b19bd0741')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
 
 package() {
