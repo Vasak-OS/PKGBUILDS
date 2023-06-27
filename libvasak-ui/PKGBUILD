@@ -1,26 +1,31 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=libvasak-ui
-pkgver=0.0.1
+pkgver=0.0.2
 pkgrel=1
 pkgdesc="UI lib for VasakOS"
 arch=('any')
 url="https://github.com/Vasak-OS/$pkgname/"
 license=('GPL')
+builddepends=(
+  'nodejs'
+)
 source=(
   "$url/archive/refs/tags/$pkgver.tar.gz"
 )
 md5sums=(
-  'c2e5d6b9a971749e0c657707ea9cdac7'
+  '95b3f46a5906b422ce486d6a9f63f5c0'
 )
 
 package() {
   cd ${pkgname}-${pkgver}
+  npm i
+  npm run build
   install -d ${pkgdir}/usr/lib/${pkgname}/{css,js}
   for _jsfile in ./js/*; do
     install -m0644 "${_jsfile}" "${pkgdir}/usr/lib/${pkgname}/js/"
   done
-  for _cssfile in ./css/*; do
+  for _cssfile in ./dist/*; do
     install -m0644 "${_cssfile}" "${pkgdir}/usr/lib/${pkgname}/css/"
   done
 }
