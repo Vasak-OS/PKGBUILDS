@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=bootstrap
-pkgver=5.2.3
+pkgver=5.3.0
 pkgrel=1
 pkgdesc="Front-end framework for web development"
 arch=('any')
@@ -11,7 +11,7 @@ install=bootstrap.install
 source=(
   "https://github.com/twbs/${pkgname}/releases/download/v${pkgver}/${pkgname}-${pkgver}-dist.zip"
 )
-md5sums=('17754976568aa069bb621d759be82cc4')
+md5sums=('cc9126eac63f618794f384661e05b9e4')
 
 package() {
   cd ${pkgname}-${pkgver}-dist
