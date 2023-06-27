@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.0.14
+pkgver=0.0.15
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -9,7 +9,7 @@ url="https://github.com/Vasak-OS/$pkgname/"
 license=('GPL')
 makedepends=('git')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
-md5sums=('f80509b523f541302e032925cf92e5e5')
+md5sums=('f5f8b538bc36f5cd5e8fc0ac0b19a342')
 depends=(
     'dex'
     'dunst'
