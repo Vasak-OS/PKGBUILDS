@@ -10,8 +10,7 @@ depends=(
     'gnome-menus'
     'python-dbus'
     'python-gobject'
-    'libwnck3'
-    'libxkbcommon-x11'
+    'python-pywayland'
 )
 license=('GPL')
 arch=('x86_64')
