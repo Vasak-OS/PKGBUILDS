@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=nwjs-sdk
-pkgver=0.65.0
+pkgver=0.77.0
 pkgrel=1
 pkgdesc="An app runtime based on Chromium and node.js."
 arch=("x86_64")
@@ -18,7 +18,7 @@ optdepends=(
 )
 provides=("nwjs-sdk")
 source=("${pkgname}-${pkgver}.tar.gz::http://dl.nwjs.io/v${pkgver}/${pkgname%-bin}-v${pkgver}-linux-x64.tar.gz")
-md5sums=('3ca15329b3f1fd8af01e58954303e74c')
+md5sums=('1f39728d8ccc05e6c44b1fd304fced60')
 
 package() {
   cd "${pkgname}-v${pkgver}-linux-x64"
