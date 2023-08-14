@@ -1,0 +1,26 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=libvasak-bootstrap
+_pkgname=bootstrap
+pkgver=5.3.0
+pkgrel=1
+pkgdesc="Front-end framework for web development"
+arch=('any')
+url="https://getbootstrap.com/"
+license=('MIT')
+install=bootstrap.install
+source=(
+  "https://github.com/twbs/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-${pkgver}-dist.zip"
+)
+md5sums=('cc9126eac63f618794f384661e05b9e4')
+
+package() {
+  cd ${_pkgname}-${pkgver}-dist
+  install -d ${pkgdir}/usr/lib/${_pkgname}/{css,js}
+  for _jsfile in ./js/*; do
+    install -m0644 "${_jsfile}" "${pkgdir}/usr/lib/${_pkgname}/js/"
+  done
+  for _cssfile in ./css/*; do
+    install -m0644 "${_cssfile}" "${pkgdir}/usr/lib/${_pkgname}/css/"
+  done
+}
