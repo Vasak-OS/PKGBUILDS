@@ -6,17 +6,11 @@ pkgrel=1
 pkgdesc="Task Bar for Vasak OS"
 url="https://github.com/Vasak-OS/$pkgname/"
 depends=(
-    'nwjs'
-    'bootstrap'
+    'libvasak-bootstrap'
     'libvasak-ui'
     'libvasak-vue'
     'hydriam'
-    'python-dbus'
-    'python-gobject'
-    'python-xlib'
-)
-makedepends=(
-    'nodejs'
+    'python-libvasak'
 )
 license=('GPL')
 arch=('x86_64')
@@ -28,7 +22,6 @@ package() {
     install -dm755 "${pkgdir}/usr/share/${pkgname}/"
     install -d "${pkgdir}/usr/bin"
     cp -r ${srcdir}/${pkgname}-${pkgver}/* "${pkgdir}/usr/share/${pkgname}/"
-    cd "${pkgdir}/usr/share/${pkgname}/" && npm i
     chmod a+x "${pkgdir}/usr/share/${pkgname}/${pkgname}"
     sudo ln -sf "/usr/share/${pkgname}/${pkgname}" "${pkgdir}/usr/bin"
 }

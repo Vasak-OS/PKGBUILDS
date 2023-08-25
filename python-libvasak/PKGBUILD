@@ -9,6 +9,8 @@ depends=(
     'python'
     'python-pyqt6'
     'python-pyqt6-webengine'
+    'python-gobject'
+    'python-dbus'
 )
 makedepends=(
     'python-setuptools'

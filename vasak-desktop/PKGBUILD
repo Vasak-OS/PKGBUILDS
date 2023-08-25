@@ -6,16 +6,13 @@ pkgrel=1
 pkgdesc="Desktop for VasakOS"
 url="https://github.com/Vasak-OS/$pkgname/"
 depends=(
-    'nwjs'
-    'nwjs-ffmpeg-codecs'
     'vasak-desktop-settings'
-    'bootstrap'
-    'navale'
+    'libvasak-bootstrap'
     'libvasak-ui'
     'libvasak-vue'
-)
-makedepends=(
-    'nodejs'
+    'navale'
+    'hydriam'
+    'python-libvasak'
 )
 license=('GPL')
 arch=('x86_64')
@@ -27,7 +24,6 @@ package() {
     install -dm755 "${pkgdir}/usr/share/${pkgname}/"
     install -d "${pkgdir}/usr/bin"
     cp -r ${srcdir}/${pkgname}-${pkgver}/* "${pkgdir}/usr/share/${pkgname}/"
-    cd "${pkgdir}/usr/share/${pkgname}/" && npm i
     chmod a+x "${pkgdir}/usr/share/${pkgname}/${pkgname}"
     sudo ln -sf "/usr/share/${pkgname}/${pkgname}" "${pkgdir}/usr/bin"
 }
