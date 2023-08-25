@@ -1,40 +1,77 @@
 pkgname=wayfire-vsk
+pkgver=0.8.0.r2669.88ceeff7
 _pkgname=wayfire
 _pluginname=wayfire-vsk-plugin
 _pluginver=0.0.1
-pkgver=0.7.5
+url="https://github.com/ammen99/wayfire"
 pkgrel=1
 pkgdesc="3D wayland compositor for VasakOS"
 arch=(x86_64)
 url=https://wayfire.org
 license=(custom:MIT)
-depends=(cairo pango 'wf-config>=0.5' libjpeg libinput 'wlroots>=0.16' 'wlroots<0.17')
-makedepends=(meson ninja wayland-protocols glm cmake doctest)
+depends=(
+    cairo
+    pango
+    libjpeg
+    libinput
+    'wlroots'
+    'glm'
+    'libjpeg'
+    'wf-config'
+    'seatd'
+)
+makedepends=('git' 'meson' 'ninja' 'wayland-protocols' 'doctest' 'cmake' 'nlohmann-json')
 conflicts=(
     "${_pkgname}-git"
     "${_pkgname}"
 )
 provides=("${_pkgname}")
 source=(
-    "https://github.com/WayfireWM/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-${pkgver}.tar.xz"
+    "${_pkgname}::git+https://github.com/WayfireWM/wayfire"
     "https://github.com/Vasak-OS/${_pluginname}/archive/refs/tags/${_pluginver}.tar.gz"
     "wayfire.patch"
 )
 sha256sums=(
-    'f2e3184e72fe7999488fbba10bd38c29350b447489f02961aab5fa8438698b5c'
+    'SKIP'
     'd6370a014ff6ac0b8ca70a70257621322ab82db39a1e87eec7a1a17bdabeb668'
     '9d9bf865fa53be5b561afc2a981780927910a11d0a6fe84a4801451d80bd337e'
 )
 
-build() {
-    mv "${_pluginname}-${_pluginver}" "${_pkgname}-${pkgver}/plugins/${_pluginname}"
+_builddir="build"
+_builddir_pkgver="build-pkgver"
+
+_meson_setup() {
+    arch-meson \
+        -Duse_system_wlroots=enabled \
+        -Duse_system_wfconfig=enabled \
+        -Dtests=disabled \
+        "${srcdir}/${_pkgname}/" "$1"
+}
+
+prepare() {
+    cd "${srcdir}/${_pkgname}"
+    _meson_setup "${srcdir}/${_builddir_pkgver}"
+}
+
+pkgver() {
     (
-        cd "${srcdir}/${_pkgname}-${pkgver}"
+        set -o pipefail
+        meson introspect --projectinfo "${_builddir_pkgver}" |
+            awk 'match($0, /"version":\s*"([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)"/, ret) {printf "%s",ret[1]}'
+    )
+    cd "${srcdir}/${_pkgname}"
+    printf ".r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    mv "${_pluginname}-${_pluginver}" "${_pkgname}/plugins/${_pluginname}"
+    (
+        cd "${srcdir}/${_pkgname}"
         patch -p1 <"${srcdir}/wayfire.patch"
     )
     rm -rf build
-    arch-meson "${_pkgname}-${pkgver}" build -Duse_system_wfconfig=enabled -Duse_system_wlroots=enabled
-    ninja -C build
+    _meson_setup "${srcdir}/${_builddir}"
+    meson compile -C "${srcdir}/${_builddir}"
 }
 
 check() {
@@ -42,9 +79,6 @@ check() {
 }
 
 package() {
-    DESTDIR="${pkgdir}/" ninja -C build install
-    cd "${_pkgname}-${pkgver}"
-    install -Dm644 wayfire.desktop "${pkgdir}/usr/share/wayland-sessions/wayfire.desktop"
-    install -Dm644 wayfire.ini "${pkgdir}/usr/share/doc/${_pkgname}/wayfire.ini"
-    install -Dm645 LICENSE "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
+    DESTDIR="${pkgdir}/" meson install -C "${srcdir}/${_builddir}"
+    install -m644 "${srcdir}/${_pkgname}/wayfire.ini" "${pkgdir}/usr/share"
 }
