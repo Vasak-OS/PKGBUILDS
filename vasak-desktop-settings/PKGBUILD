@@ -17,6 +17,7 @@ depends=(
     'hydriam-data'
     #'lynx-gtk-theme'
     'python-yaml'
+    'kwin'
 )
 
 package() {

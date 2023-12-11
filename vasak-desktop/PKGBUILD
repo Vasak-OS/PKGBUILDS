@@ -9,7 +9,6 @@ depends=(
     'vasak-desktop-settings'
     'libvasak-bootstrap'
     'libvasak-ui'
-    'libvasak-vue'
     'navale'
     'hydriam'
     'python-libvasak'

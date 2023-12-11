@@ -6,16 +6,10 @@ pkgrel=1
 pkgdesc="App menu for Vasak OS"
 url="https://github.com/Vasak-OS/$pkgname/"
 depends=(
-    'nwjs'
-    'bootstrap'
+    'python-libvasak'
+    'libvasak-bootstrap'
     'libvasak-ui'
-    'libvasak-vue'
     'hydriam-data'
-    'gnome-menus'
-    'python-dbus'
-    'python-gobject'
-    'gtk3'
-    'pyside2'
 )
 makedepends=(
     'nodejs'
