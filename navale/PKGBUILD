@@ -9,6 +9,8 @@ depends=(
     'libvasak-bootstrap'
     'libvasak-ui'
     'python-libvasak'
+    'python-gobject'
+    'libwnck3'
 )
 makedepends=(
     'nodejs'
