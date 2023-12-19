@@ -1,0 +1,30 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=terminatio
+pkgver=0.0.1
+pkgrel=1
+pkgdesc="App menu for Vasak OS"
+url="https://github.com/Vasak-OS/$pkgname/"
+depends=(
+    'python-libvasak'
+    'libvasak-bootstrap'
+    'libvasak-ui'
+    'python-flask-socketio'
+)
+makedepends=(
+    'nodejs'
+)
+license=('GPL')
+arch=('x86_64')
+md5sums=('68c81dfe3a33b44ea3c88451fccdc159')
+source=("$url/archive/refs/tags/$pkgver.tar.gz")
+
+package() {
+    cd $pkgname-$pkgver
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/"
+    install -d "${pkgdir}/bin"
+    cp -r ${srcdir}/${pkgname}-${pkgver}/* "${pkgdir}/usr/share/${pkgname}/"
+    cd "${pkgdir}/usr/share/${pkgname}/ui" && npm i && npm run build
+    chmod a+x "${pkgdir}/usr/share/${pkgname}/${pkgname}"
+    ln -sf "/usr/share/${pkgname}/${pkgname}" "${pkgdir}/bin/${pkgname}"
+}
