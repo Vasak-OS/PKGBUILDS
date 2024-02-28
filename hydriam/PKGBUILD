@@ -7,7 +7,6 @@ pkgdesc="App menu for Vasak OS"
 url="https://github.com/Vasak-OS/$pkgname/"
 depends=(
     'python-libvasak'
-    'libvasak-bootstrap'
     'libvasak-ui'
     'hydriam-data'
 )
