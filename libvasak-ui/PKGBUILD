@@ -20,8 +20,8 @@ md5sums=(
 package() {
   cd ${pkgname}-${pkgver}
   npm i
-  npm run build
-  install -d ${pkgdir}/usr/lib/${pkgname}/{css,js}
+  npm run build:prod
+  install -d ${pkgdir}/usr/lib/${pkgname}/{.min.css,js}
   for _jsfile in ./js/*; do
     install -m0644 "${_jsfile}" "${pkgdir}/usr/lib/${pkgname}/js/"
   done
