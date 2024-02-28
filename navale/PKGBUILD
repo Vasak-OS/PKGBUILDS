@@ -6,7 +6,6 @@ pkgrel=1
 pkgdesc="Task Bar for Vasak OS"
 url="https://github.com/Vasak-OS/$pkgname/"
 depends=(
-    'libvasak-bootstrap'
     'libvasak-ui'
     'python-libvasak'
     'python-gobject'
