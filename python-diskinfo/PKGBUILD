@@ -1,0 +1,24 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=python-diskinfo
+_pkgname=diskinfo
+pkgver=3.1.0
+pkgrel=1
+pkgdesc="Python Library for Web Apps in QtWebEngine for VasakOS"
+url="https://github.com/petersulyok/$_pkgname"
+depends=(
+    'python'
+)
+makedepends=(
+    'python-setuptools'
+)
+license=('MIT')
+arch=('x86_64')
+md5sums=('5d9ac3888076cfa1409ddac6f3fd6d58' 'SKIP')
+source=("$url/archive/refs/tags/v$pkgver.tar.gz" "setup.py")
+
+package() {
+    cp setup.py "$_pkgname-$pkgver"
+    cd "$_pkgname-$pkgver"
+    python setup.py install --root="$pkgdir" --optimize=1
+}
