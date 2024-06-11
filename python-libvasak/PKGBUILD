@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=python-libvasak
-pkgver=0.0.1
+pkgver=0.1.0
 pkgrel=1
 pkgdesc="Python Library for Web Apps in QtWebEngine for VasakOS"
 url="https://github.com/Vasak-OS/$pkgname"
@@ -22,7 +22,7 @@ makedepends=(
 )
 license=('GPL')
 arch=('x86_64')
-md5sums=('8b31680a10f19e80fc0d9d2121de0755')
+md5sums=('43b521eeec3a7f47f3f5665232209c87')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
 
 package() {
