@@ -8,17 +8,20 @@ pkgdesc="Python Library for Web Apps in QtWebEngine for VasakOS"
 url="https://github.com/petersulyok/$_pkgname"
 depends=(
     'python'
+    'python-pysmart'
 )
 makedepends=(
     'python-setuptools'
+    'python-wheel'
 )
 license=('MIT')
 arch=('x86_64')
-md5sums=('5d9ac3888076cfa1409ddac6f3fd6d58' 'SKIP')
-source=("$url/archive/refs/tags/v$pkgver.tar.gz" "setup.py")
+md5sums=('5d9ac3888076cfa1409ddac6f3fd6d58')
+source=("$url/archive/refs/tags/v$pkgver.tar.gz")
 
 package() {
-    cp setup.py "$_pkgname-$pkgver"
     cd "$_pkgname-$pkgver"
-    python setup.py install --root="$pkgdir" --optimize=1
+    python -m build
+    python -m installer --destdir "$pkgdir" ./dist/$_pkgname-$pkgver-py3-none-any.whl
+    #python -m installer --destdir "$pkgdir" ./dist/$_pkgname-$pkgver.tar.gz 
 }
