@@ -12,10 +12,9 @@ depends=(
     'python-gobject'
     'python-configargparse'
     'gnome-menus'
-    'lspci'
-    'cat'
+    'networkmanager'
+    'pciutils'
     'grep'
-    'nmcli'
 )
 makedepends=(
     'python-setuptools'
