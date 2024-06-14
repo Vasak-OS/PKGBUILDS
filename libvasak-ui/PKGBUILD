@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=libvasak-ui
-pkgver=0.0.2
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="UI lib for VasakOS"
 arch=('any')
@@ -14,14 +14,13 @@ source=(
   "$url/archive/refs/tags/$pkgver.tar.gz"
 )
 md5sums=(
-  '95b3f46a5906b422ce486d6a9f63f5c0'
+  '09eafd018a49b03cb608cd9e1cfa469f'
 )
 
 package() {
   cd ${pkgname}-${pkgver}
-  npm i
-  npm run build:prod
-  install -d ${pkgdir}/usr/lib/${pkgname}/{.min.css,js}
+  bun install && bun run build:prod
+  install -d ${pkgdir}/usr/lib/${pkgname}/{css,js}
   for _jsfile in ./js/*; do
     install -m0644 "${_jsfile}" "${pkgdir}/usr/lib/${pkgname}/js/"
   done
