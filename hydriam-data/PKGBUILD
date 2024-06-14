@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=hydriam-data
-pkgver=1.0.1
+pkgver=1.0.2
 pkgrel=1
 pkgdesc="freedesktop.org app menu definition files for hydriam, menu of VasakOS"
 arch=('x86_64')
@@ -9,7 +9,7 @@ url="https://github.com/Vasak-OS/${pkgname}/"
 license=('GPL')
 makedepends=('git')
 source=("$url/archive/refs/tags/$pkgver.tar.gz")
-md5sums=('b19fbe516e76bff341505e28b5db67c3')
+md5sums=('1fe565fdd47e6fe0346ebde102530624')
 
 package() {
     cd $pkgname-$pkgver
