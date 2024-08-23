@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=libvasak-ui
-pkgver=1.0.0
+pkgver=1.0.2
 pkgrel=1
 pkgdesc="UI lib for VasakOS"
 arch=('any')
@@ -14,7 +14,7 @@ source=(
   "$url/archive/refs/tags/$pkgver.tar.gz"
 )
 md5sums=(
-  '09eafd018a49b03cb608cd9e1cfa469f'
+  '50ada4be2ccb2a0110e1460f30e3b3a8'
 )
 
 package() {
