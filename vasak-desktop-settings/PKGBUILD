@@ -24,7 +24,9 @@ package() {
     install -dm755 $pkgdir/etc
     install -dm755 $pkgdir/usr/share/glib-2.0/schemas
     install -dm755 $pkgdir/etc/vasak
+    install -dm755 $pkgdir/etc/skel
     cp $srcdir/$pkgname-$pkgver/etc/vasak/session.yaml $pkgdir/etc/vasak/session.yaml
+    cp -r $srcdir/$pkgname-$pkgver/etc/skel $pkgdir/etc/
     cp -r $srcdir/$pkgname-$pkgver/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
     cp $srcdir/$pkgname-$pkgver/schemas/* $pkgdir/usr/share/glib-2.0/schemas
