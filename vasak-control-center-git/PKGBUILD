@@ -1,5 +1,5 @@
 # Mantenedor: Tu nombre <tu@email.com>
-pkgname=vpanel
+pkgname=vasak-control-center
 pkgver=1.0.0
 pkgrel=1
 pkgdesc="Un menú personalizado para VasakOS"
