@@ -5,27 +5,27 @@ pkgver=0.1.2
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
-url="https://github.com/Vasak-OS/$pkgname/"
-license=('GPL')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPLv3')
 makedepends=('git')
-source=("git+${url}.git")
-md5sums=('d195994808b19ea20402db07e3b88229')
 depends=(
     'dex'
     'polkit-gnome'
     'python-yaml'
     'xfwm4'
 )
+source=("git+${url}.git")
+sha256sums=('SKIP')
 
 package() {
-    cd $_pkgbase
+    cd "$srcdir/$pkgname"
     install -dm755 $pkgdir/etc
     install -dm755 $pkgdir/usr/share/glib-2.0/schemas
     install -dm755 $pkgdir/etc/vasak
     install -dm755 $pkgdir/etc/skel
-    cp $srcdir/$pkgname-$pkgver/etc/vasak/session.yaml $pkgdir/etc/vasak/session.yaml
-    cp -r $srcdir/$pkgname-$pkgver/etc/skel $pkgdir/etc/
-    cp -r $srcdir/$pkgname-$pkgver/usr $pkgdir/
+    cp $srcdir/$pkgname/etc/vasak/session.yaml $pkgdir/etc/vasak/session.yaml
+    cp -r $srcdir/$pkgname/etc/skel $pkgdir/etc/
+    cp -r $srcdir/$pkgname/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
-    cp $srcdir/$pkgname-$pkgver/schemas/* $pkgdir/usr/share/glib-2.0/schemas
+    cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
 }
