@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -12,9 +12,7 @@ source=("$url/archive/refs/tags/$pkgver.tar.gz")
 md5sums=('d195994808b19ea20402db07e3b88229')
 depends=(
     'dex'
-    'dunst'
     'polkit-gnome'
-    'hydriam-data'
     'python-yaml'
     'xfwm4'
 )
