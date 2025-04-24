@@ -1,8 +1,9 @@
-# Mantenedor: Tu nombre <tu@email.com>
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
 pkgname=vasak-control-center
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Un menú personalizado para VasakOS"
+pkgdesc="Panel de control para el entorno de escritorio Vasak"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')

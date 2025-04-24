@@ -1,4 +1,5 @@
-# Mantenedor: Tu nombre <tu@email.com>
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
 pkgname=vmenu
 pkgver=1.0.0
 pkgrel=1
