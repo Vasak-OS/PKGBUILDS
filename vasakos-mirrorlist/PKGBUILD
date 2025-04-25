@@ -8,7 +8,7 @@ pkgdesc="VasakOS repository mirrorlist"
 arch=('any')
 license=(GPL-3.0-or-later)
 source=(vasakos-mirrorlist)
-sha512sums=('575d77396692fb89b33b50fdfce5291b70a188e677ec86aa065ee5598c7d58ba7378bd848c50a60e5d67d4e20321e06ca3496b2b67bbc72254efcd5b4ca64781')
+sha512sums=('f56294443099f87abd6d0b25afb86e354d15d217de97382a62a518b7151e438a7e78f91314ce43d9561b3d0d7b9a95751e9ec2484204ce0ac3249ba690018948')
 
 package_vasakos-mirrorlist() {
  backup=("etc/pacman.d/$pkgname")  # to keep possibly ranked mirrorlist
