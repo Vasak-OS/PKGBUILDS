@@ -5,4 +5,4 @@
 ######################################################
 
 ## VasakOS Base Server
-Server = https://os.vasak.net.ar/repo/$arch/$repo
+Server = https://repo.vasak.net.ar/repo/$arch/$repo
