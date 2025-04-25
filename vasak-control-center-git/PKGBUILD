@@ -35,6 +35,8 @@ depends=(
     'appmenu-gtk-module'
     'libappindicator-gtk3'
     'librsvg'
+    'networkmanager'
+    
 )
 makedepends=(
     'rust'
