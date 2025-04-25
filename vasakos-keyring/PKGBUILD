@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasakos-keyring
-pkgver=20240331
+pkgver=20250425
 pkgrel=1
 pkgdesc="vasakos keyring"
 arch=(any)
