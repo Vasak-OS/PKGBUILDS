@@ -9,6 +9,14 @@ url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')
 depends=(
     'webkit2gtk'
+    'webkit2gtk-4.1'
+    'curl'
+    'wget'
+    'file'
+    'openssl'
+    'appmenu-gtk-module'
+    'libappindicator-gtk3'
+    'librsvg'
     'gtk3'
     'libsoup'
     'base-devel'
