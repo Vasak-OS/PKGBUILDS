@@ -8,18 +8,23 @@ arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')
 depends=(
-    'webkit2gtk'
-    'webkit2gtk-4.1'
-    'curl'
-    'wget'
-    'file'
-    'openssl'
-    'appmenu-gtk-module'
-    'libappindicator-gtk3'
-    'librsvg'
-    'gtk3'
-    'libsoup'
-    'base-devel'
+    webkit2gtk
+    gtk3
+    cairo
+    gdk-pixbuf2
+    pango
+    libsoup3
+    glib2
+    webkit2gtk
+    libx11
+    libepoxy
+    libfontconfig
+    libfreetype
+    libpng16
+    libjpeg
+    libsqlite3
+    libxml2
+    libwebp
 )
 makedepends=(
     'rust'
