@@ -1,80 +1,64 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-control-center
-pkgver=1.0.0
+pkgver=0.1.0
 pkgrel=1
 pkgdesc="Panel de control para el entorno de escritorio Vasak"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')
 depends=(
-    'gtk3'
-    'libx11'
-    'libxcb'
-    'xcb-util-wm'
-    'xcb-util-image'
-    'wayland'
-    'wayland-protocols'
-    'wlroots'
-    'gdk-pixbuf2'
     'cairo'
-    'pango'
+    'desktop-file-utils'
+    'gdk-pixbuf2'
+    'glib2'
+    'gtk3'
     'hicolor-icon-theme'
-    'adwaita-icon-theme'
-    'libnotify'
-    'dbus'
-    'xdg-utils'
-    'xdg-desktop-portal'
-    'xdg-desktop-portal-gtk'
+    'libsoup'
+    'pango'
     'webkit2gtk-4.1'
-    'base-devel'
-    'curl'
-    'wget'
-    'file'
+    'networkmanager'
+    'dbus'
+)
+makedepends=(
+    'git'
     'openssl'
     'appmenu-gtk-module'
     'libappindicator-gtk3'
     'librsvg'
-    'networkmanager'
-    
-)
-makedepends=(
-    'rust'
     'cargo'
     'bun'
-    'git'
+    'rust'
 )
 source=("git+${url}.git")
 sha256sums=('SKIP')
 
-build() {
+prepare() {
     cd "$srcdir/$pkgname"
-
     # Instalar dependencias con bun
     bun install
+}
 
+build() {
+    cd "$srcdir/$pkgname"
     # Construir el proyecto
-    bun run tauri build --no-bundle
+    bun run tauri build -b deb
 }
 
 package() {
-    cd "$srcdir/$pkgname"
+    cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_*/data/* "${pkgdir}"
+}
 
-    # Crear directorios necesarios
-    install -dm755 "$pkgdir/usr/bin"
-    install -dm755 "$pkgdir/usr/share/applications"
-    install -dm755 "$pkgdir/usr/share/$pkgname"
+post_install() {
+  gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+  update-desktop-database -q
+}
 
-    # Instalar el binario
-    install -Dm755 "src-tauri/target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+post_upgrade() {
+  post_install
+}
 
-    # Instalar el .desktop file si existe
-    if [ -f "src-tauri/target/$pkgname.desktop" ]; then
-        install -Dm644 "src-tauri/target/$pkgname.desktop" "$pkgdir/usr/share/applications/$pkgname.desktop"
-    fi
-
-    # Instalar los iconos si existen
-    if [ -d "src-tauri/target/icons" ]; then
-        cp -r "src-tauri/target/icons" "$pkgdir/usr/share/$pkgname/"
-    fi
+post_remove() {
+  gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+  update-desktop-database -q
 }
