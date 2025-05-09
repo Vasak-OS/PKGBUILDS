@@ -19,7 +19,7 @@ depends=(
     'bat'
     'sudo-rs'
     'eza'
-    'rg'
+    'ripgrep'
     'dust'
     'procs'
 )
