@@ -13,6 +13,15 @@ depends=(
     'polkit-gnome'
     'python-yaml'
     'xfwm4'
+    'vpanel'
+    'vasak-desktop'
+    'vmenu'
+    'bat'
+    'sudo-rs'
+    'eza'
+    'rg'
+    'dust'
+    'procs'
 )
 source=("git+${url}.git")
 sha256sums=('SKIP')
