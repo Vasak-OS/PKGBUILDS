@@ -17,6 +17,8 @@ depends=(
     'libsoup'
     'pango'
     'webkit2gtk-4.1'
+    'networkmanager'
+    'dbus'
 )
 makedepends=(
     'git'
