@@ -1,0 +1,28 @@
+# Maintainer: "Amhairghin" Oscar Garcia Amor (https://ogarcia.me)
+# Contributor: "marmis" Tiago de Paula Alves <tiagodepalves@gmail.com>
+
+pkgbase='vasakos-icon-theme'
+pkgname=("${pkgbase}")
+pkgdesc='A flat, colorful design icon theme'
+pkgver=0.5.2
+pkgrel=1
+url="https://github.com/vasak-os/${pkgbase^}"
+arch=('any')
+license=('GPL-3.0-or-later')
+makedepends=('git')
+depends=('hicolor-icon-theme' 'adwaita-icon-theme')
+provides=("${pkgbase}")
+source=("${pkgbase}::git+${url}.git")
+b2sums=('SKIP')
+
+package() {
+  gtk-update-icon-cache() {
+    :
+  }
+  export -f gtk-update-icon-cache
+
+  cd "${pkgbase}"
+  install -dm755 "${pkgdir}/usr/share/icons"
+  ./install.sh -d "${pkgdir}/usr/share/icons"
+}
+
