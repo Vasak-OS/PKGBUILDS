@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop
-pkgver=0.5.2
+pkgver=0.5.3
 pkgrel=1
 pkgdesc="Desktop for VasakOS"
 arch=('x86_64')
