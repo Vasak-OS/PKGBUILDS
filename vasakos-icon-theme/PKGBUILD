@@ -4,7 +4,7 @@
 pkgbase='vasakos-icon-theme'
 pkgname=("${pkgbase}")
 pkgdesc='A flat, colorful design icon theme'
-pkgver=0.5.2
+pkgver=0.5.3
 pkgrel=1
 url="https://github.com/vasak-os/${pkgbase^}"
 arch=('any')

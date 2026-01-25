@@ -1,3 +1,13 @@
 DISTRIB_ID="vasak"
 DISTRIB_RELEASE="Sofia"
 DISTRIB_DESCRIPTION="VasakOS"
+NAME="VasakOS Linux"
+PRETTY_NAME="VasakOS Linux"
+ID=vasakos
+ID_LIKE=arch
+BUILD_ID=rolling
+HOME_URL='https://os.vasak.net.ar/'
+DOCUMENTATION_URL='https://os.vasak.net.ar/'
+SUPPORT_URL='https://t.me/VasakOSLinux'
+BUG_REPORT_URL='https://github.com/Vasak-OS'
+LOGO=vasakos
