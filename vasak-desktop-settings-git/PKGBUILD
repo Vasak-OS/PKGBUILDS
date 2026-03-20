@@ -13,12 +13,6 @@ depends=(
     'polkit-gnome'
     'python-yaml'
     'xfwm4'
-    'vasak-desktop'
-    'bat'
-    'sudo-rs'
-    'eza'
-    'ripgrep'
-    'dust'
     'procs'
     'vasakos-icon-theme'
 )
