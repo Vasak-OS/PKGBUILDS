@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-file-manager
-pkgver=0.1.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="File manager for VasakOS"
 arch=('x86_64')
