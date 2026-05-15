@@ -2,7 +2,7 @@
 
 pkgname=vasak-file-manager
 pkgver=0.3.1
-pkgrel=1
+pkgrel=2
 pkgdesc="File manager for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"

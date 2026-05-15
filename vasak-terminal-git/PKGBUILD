@@ -2,7 +2,7 @@
 
 pkgname=vasak-terminal
 pkgver=0.2.2
-pkgrel=1
+pkgrel=3
 pkgdesc="Terminal for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -36,6 +36,14 @@ prepare() {
 
 build() {
     cd "$srcdir/$pkgname"
+  unset CFLAGS
+  unset CXXFLAGS
+  unset CPPFLAGS
+  unset LDFLAGS
+  unset RUSTFLAGS
+  unset CARGO_BUILD_RUSTFLAGS
+  export RUSTFLAGS="-C target-cpu=x86-64 -C target-feature=-sse4a,-avx,-avx2"
+  export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
     # Construir el proyecto
     bun run tauri build
 }

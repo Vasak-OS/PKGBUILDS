@@ -1,9 +1,9 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
-pkgname=vasak-gallery
+pkgname=vasak-resonance
 pkgver=0.1.0
 pkgrel=3
-pkgdesc="A photo gallery application for Vasak OS, built with Tauri and Vue.js."
+pkgdesc="Resonance audio player for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')
@@ -17,13 +17,7 @@ depends=(
     'libsoup'
     'pango'
     'webkit2gtk-4.1'
-    'vasak-impulse-daemon'
     'dbus'
-    'gst-libav'
-    'gst-plugins-bad'
-    'gst-plugins-base'
-    'gst-plugins-good'
-    'gst-plugins-ugly'
     'sqlite'
 )
 makedepends=(
@@ -48,15 +42,12 @@ prepare() {
 
 build() {
     cd "$srcdir/$pkgname"
-  unset CFLAGS
-  unset CXXFLAGS
-  unset CPPFLAGS
-  unset LDFLAGS
-  unset RUSTFLAGS
-  unset CARGO_BUILD_RUSTFLAGS
-  export RUSTFLAGS="-C target-cpu=x86-64 -C target-feature=-sse4a,-avx,-avx2"
-  export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
-  # Construir el proyecto
+    unset CFLAGS
+    unset CXXFLAGS
+    unset CPPFLAGS
+    unset LDFLAGS
+    unset RUSTFLAGS
+    unset CARGO_BUILD_RUSTFLAGS
     bun run tauri build
 }
 
