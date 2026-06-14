@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-file-manager
-pkgver=0.3.1
+pkgver=0.3.2
 pkgrel=2
 pkgdesc="File manager for VasakOS"
 arch=('x86_64')
@@ -14,7 +14,7 @@ depends=(
     'glib2'
     'gtk3'
     'hicolor-icon-theme'
-    'libsoup'
+    'libsoup3'
     'pango'
     'webkit2gtk-4.1'
     'gst-plugins-base'
@@ -25,6 +25,7 @@ depends=(
 )
 makedepends=(
     'git'
+    'pkgconf'
     'openssl'
     'appmenu-gtk-module'
     'libappindicator-gtk3'
@@ -39,29 +40,13 @@ sha256sums=('SKIP')
 
 prepare() {
     cd "$srcdir/$pkgname"
-    # Evitar fallos de linking con lld en zstd/tantivy
-    mkdir -p src-tauri/.cargo
-    cat > src-tauri/.cargo/config.toml << 'EOF'
-[target.x86_64-unknown-linux-gnu]
-rustflags = [
-  "-C",
-  "link-arg=-fuse-ld=bfd",
-  "-C",
-  "link-arg=-Wl,--no-as-needed",
-  "-C",
-  "link-arg=-lzstd",
-]
-EOF
     # Instalar dependencias con bun
     bun install
 }
 
 build() {
     cd "$srcdir/$pkgname"
-    unset CARGO_ENCODED_RUSTFLAGS
-    export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=-fuse-ld=bfd -C link-arg=-Wl,--no-as-needed -C link-arg=-lzstd"
-    export RUSTFLAGS="${RUSTFLAGS} -C link-arg=-fuse-ld=bfd -C link-arg=-Wl,--no-as-needed -C link-arg=-lzstd"
-    # Construir el proyecto
+    export ZSTD_SYS_USE_PKG_CONFIG=1
     bun run tauri build
 }
 
