@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-gallery
-pkgver=0.1.0
-pkgrel=3
+pkgver=0.1.1
+pkgrel=1
 pkgdesc="A photo gallery application for Vasak OS, built with Tauri and Vue.js."
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -14,10 +14,9 @@ depends=(
     'glib2'
     'gtk3'
     'hicolor-icon-theme'
-    'libsoup'
+    'libsoup3'
     'pango'
     'webkit2gtk-4.1'
-    'vasak-impulse-daemon'
     'dbus'
     'gst-libav'
     'gst-plugins-bad'
