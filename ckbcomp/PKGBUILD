@@ -2,7 +2,7 @@
 
 _pkgname="ckbcomp"
 pkgname="$_pkgname"
-pkgver=1.246
+pkgver=1.248
 pkgrel=1
 pkgdesc="Compile a XKB keyboard description to a keymap suitable for loadkeys or kbdcontrol"
 url="https://salsa.debian.org/installer-team/console-setup"
