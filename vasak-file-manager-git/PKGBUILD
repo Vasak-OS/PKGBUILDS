@@ -22,6 +22,8 @@ depends=(
     'gst-plugins-bad'
     'gst-libav'
     'zstd'
+    'p7zip'
+    'unrar'
 )
 makedepends=(
     'git'
