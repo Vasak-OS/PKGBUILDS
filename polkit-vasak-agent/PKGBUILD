@@ -1,0 +1,78 @@
+# Maintainer: Joaquin (Pato) Decima <pato@vasak.net.ar>
+
+pkgname=polkit-vasak-agent
+pkgver=0.1.0
+pkgrel=2
+pkgdesc="Agente de autenticación PolicyKit para VasakOS"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/polkit-vasak"
+license=('GPL3')
+depends=(
+    'dbus'
+    'polkit'
+    'sudo'
+    'glibc'
+    'gcc-libs'
+    'desktop-file-utils'
+    'hicolor-icon-theme'
+)
+makedepends=(
+    'git'
+    'openssl'
+    'librsvg'
+    'cargo'
+    'bun'
+    'rust'
+    'webkit2gtk-4.1'
+    'gtk3'
+)
+source=("${pkgname}::git+${url}.git"
+        "polkit-vasak-agent.service")
+sha256sums=('SKIP'
+            'SKIP')
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    bun install
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    unset CFLAGS
+    unset CXXFLAGS
+    unset CPPFLAGS
+    unset LDFLAGS
+    unset RUSTFLAGS
+    unset CARGO_BUILD_RUSTFLAGS
+    export RUSTFLAGS="-C target-cpu=x86-64 -C target-feature=-sse4a,-avx,-avx2"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    bun run tauri build
+    cargo build --release --manifest-path src-tauri/Cargo.toml \
+        --bin polkit-agent-helper-dbus
+}
+
+package() {
+    cp -a "$srcdir/$pkgname/src-tauri/target/release/bundle/deb/vasak-polkit-agent_${pkgver}_"*/data/* "${pkgdir}"
+    install -Dm755 "$srcdir/$pkgname/src-tauri/target/release/polkit-agent-helper-dbus" \
+        "${pkgdir}/usr/bin/polkit-agent-helper-dbus"
+    chmod u+s "${pkgdir}/usr/bin/polkit-agent-helper-dbus"
+    install -Dm644 "$srcdir/polkit-vasak-agent.service" \
+        "${pkgdir}/usr/lib/systemd/user/polkit-vasak-agent.service"
+}
+
+post_install() {
+    mkdir -p /etc/systemd/user/default.target.wants
+    ln -sf /usr/lib/systemd/user/polkit-vasak-agent.service \
+        /etc/systemd/user/default.target.wants/polkit-vasak-agent.service
+    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+    update-desktop-database -q
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+    update-desktop-database -q
+}
