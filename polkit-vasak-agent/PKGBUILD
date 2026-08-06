@@ -10,7 +10,6 @@ license=('GPL3')
 depends=(
     'dbus'
     'polkit'
-    'sudo'
     'glibc'
     'gcc-libs'
     'desktop-file-utils'
@@ -55,6 +54,9 @@ package() {
     cp -a "$srcdir/$pkgname/src-tauri/target/release/bundle/deb/vasak-polkit-agent_${pkgver}_"*/data/* "${pkgdir}"
     install -Dm755 "$srcdir/$pkgname/src-tauri/target/release/polkit-agent-helper-dbus" \
         "${pkgdir}/usr/bin/polkit-agent-helper-dbus"
+    # Intentional setuid root: polkitd only accepts AuthenticationAgentResponse3
+    # from uid 0 (same as the stock polkit-agent-helper-1). The helper itself
+    # performs the PAM check for the requested identity before responding.
     chmod u+s "${pkgdir}/usr/bin/polkit-agent-helper-dbus"
     install -Dm644 "$srcdir/polkit-vasak-agent.service" \
         "${pkgdir}/usr/lib/systemd/user/polkit-vasak-agent.service"
