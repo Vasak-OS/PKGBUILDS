@@ -1,15 +1,17 @@
 [Unit]
 Description=VasakOS PolicyKit Authentication Agent
 Documentation=https://github.com/Vasak-OS/polkit-vasak
-Requires=dbus.socket
-After=dbus.socket
+# Graphical-session daemon: it must show a Wayland dialog, so it is bound to the
+# graphical session (started by uwsm), NOT default.target — which is reached
+# before the compositor exists and also in non-graphical (e.g. SSH) logins.
+PartOf=graphical-session.target
+After=graphical-session.target
 
 [Service]
-PassEnvironment=XDG_SESSION_ID
 Type=simple
 ExecStart=/usr/bin/vasak-polkit-agent
 Restart=on-failure
 RestartSec=3
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
