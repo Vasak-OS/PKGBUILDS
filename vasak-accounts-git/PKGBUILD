@@ -1,0 +1,30 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-accounts
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2, per-app ACL) for VasakOS"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL3')
+depends=('dbus' 'glibc' 'gcc-libs')
+makedepends=('git' 'cargo' 'rust')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/$pkgname"
+    cargo build --release --locked
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # D-Bus-activated systemd user service (starts on first token request).
+    install -Dm644 "$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+    install -Dm644 "ar.net.vasak.os.AccountManager.service" \
+        "$pkgdir/usr/share/dbus-1/services/ar.net.vasak.os.AccountManager.service"
+}

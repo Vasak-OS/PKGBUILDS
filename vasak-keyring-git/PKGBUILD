@@ -1,0 +1,55 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-keyring
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL3')
+depends=('dbus' 'pam' 'glibc' 'gcc-libs')
+makedepends=('git' 'cargo' 'rust')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Workspace: builds the daemon (vasak-keyring) and the PAM module cdylib.
+    cargo build --release --workspace
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # Headless daemon; enabled on default.target (see post_install) because it
+    # must be up early for the PAM unlock at open_session, before the graphical
+    # session exists.
+    install -Dm644 "$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+
+    # PAM module: cargo emits libpam_vasak_keyring.so; PAM expects the
+    # pam_<name>.so form under the security dir.
+    install -Dm755 "target/release/libpam_vasak_keyring.so" \
+        "$pkgdir/usr/lib/security/pam_vasak_keyring.so"
+
+    # NOTE: to auto-unlock the keyring at login, the display manager's PAM stack
+    # must load the module, e.g. in /etc/pam.d/<dm>:
+    #   session optional pam_vasak_keyring.so
+    # This is intentionally NOT applied automatically to avoid breaking login.
+}
+
+post_install() {
+    mkdir -p /etc/systemd/user/default.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-keyring.service \
+        /etc/systemd/user/default.target.wants/vasak-keyring.service
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    rm -f /etc/systemd/user/default.target.wants/vasak-keyring.service
+}
