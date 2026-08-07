@@ -24,6 +24,9 @@ depends=(
     'zstd'
     'p7zip'
     'unrar'
+    'zip'
+    'unzip'
+    'tar'
 )
 makedepends=(
     'git'
