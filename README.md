@@ -10,6 +10,22 @@ for build a package you can use `makepkg` command
 makepkg -si
 ```
 
+### Build all VasakOS packages
+
+`build-all.sh` builds every package in this repo **except Calamares**. When a
+release and a `-git` variant both exist (e.g. `vasak-desktop` /
+`vasak-desktop-git`), the `-git` one is preferred. Run it as a regular user:
+
+```bash
+./build-all.sh                 # build everything (keeps going on failure)
+./build-all.sh -o ./out        # also copy built packages into ./out
+./build-all.sh -i              # also install each package
+./build-all.sh -x vasak-flare-daemon   # skip a package (repeatable)
+./build-all.sh -s              # stop on the first failure
+```
+
+It prints a built-OK / failed summary at the end.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change. Please make sure to update tests as appropriate.
