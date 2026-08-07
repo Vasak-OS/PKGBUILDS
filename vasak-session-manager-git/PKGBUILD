@@ -6,9 +6,9 @@ pkgdesc="VasakOS session manager: display manager / greeter (Rust + Vue + Tauri)
 arch=('x86_64')
 url="https://github.com/Vasak-OS/vasak-session-manager"
 license=('MIT')
-# 'nix' below refers to the Rust `nix` crate (a cargo dependency), NOT the Nix
-# package manager — do not add it to depends.
-depends=('webkit2gtk-4.1' 'gtk3' 'cage' 'pam')
+# Runs as a greetd greeter (greetd owns PAM/seat/session), so no pam/systemd
+# service is shipped here. cage hosts the greeter; greetd invokes the launcher.
+depends=('webkit2gtk-4.1' 'gtk3' 'cage' 'greetd')
 makedepends=('git' 'cargo' 'bun' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
@@ -26,8 +26,4 @@ package() {
         "$pkgdir/usr/bin/$pkgname"
     install -Dm755 "packaging/$pkgname-launch" \
         "$pkgdir/usr/bin/$pkgname-launch"
-    install -Dm644 "packaging/$pkgname.service" \
-        "$pkgdir/usr/lib/systemd/system/$pkgname.service"
-    install -Dm644 "packaging/$pkgname.pam" \
-        "$pkgdir/etc/pam.d/$pkgname"
 }
