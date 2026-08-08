@@ -16,6 +16,8 @@
 #   -x, --exclude NAME    Skip package dir NAME (repeatable).
 #   -s, --stop            Stop on the first failure (default: keep going).
 #       --no-prefer-git   Do not skip release twins in favour of -git.
+#   -d, --nodeps          Don't check or install dependencies (makepkg -d).
+#                         Lets you verify everything compiles without root.
 #       --no-check        Skip the check-all.sh pre-flight.
 #   -h, --help            Show this help.
 #
@@ -38,6 +40,7 @@ INSTALL=0
 STOP=0
 PREFER_GIT=1
 CHECK=1
+NODEPS=0
 OUTPUT=""
 
 usage() { sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
@@ -50,6 +53,7 @@ while [[ $# -gt 0 ]]; do
     -s|--stop) STOP=1; shift ;;
     --no-prefer-git) PREFER_GIT=0; shift ;;
     --no-check) CHECK=0; shift ;;
+    -d|--nodeps) NODEPS=1; shift ;;
     -h|--help) usage 0 ;;
     *) echo "Unknown option: $1" >&2; usage 1 ;;
   esac
@@ -97,7 +101,13 @@ done
 echo "==> Building ${#TARGETS[@]} package(s): ${TARGETS[*]}"
 echo
 
-MK_ARGS=(-sf --noconfirm --needed)
+if [[ $NODEPS -eq 1 ]]; then
+  # -d skips the dependency check entirely, so makepkg never needs pacman and
+  # therefore never needs root — enough to prove the sources compile.
+  MK_ARGS=(-fd --noconfirm)
+else
+  MK_ARGS=(-sf --noconfirm --needed)
+fi
 [[ $INSTALL -eq 1 ]] && MK_ARGS+=(-i)
 
 OK=()

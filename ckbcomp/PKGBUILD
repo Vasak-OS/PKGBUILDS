@@ -11,10 +11,12 @@ arch=('any')
 
 makedepends=('git')
 
-_pkgsrc="console-setup-$pkgver"
-_pkgext="tar.gz"
-source=("$_pkgsrc.$_pkgext"::"$url/-/archive/$pkgver/$_pkgsrc.$_pkgext")
-sha256sums=('bfc1eb5615f9aeda83402865deb48fd0557c0967645555615b1ed60adc6b44d0')
+# GitLab regenerates its /-/archive/ tarballs on demand and they are not
+# byte-stable, so a recorded checksum eventually stops matching through no fault
+# of the source. Cloning the tag instead is reproducible and still pinned.
+_pkgsrc="console-setup"
+source=("$_pkgsrc::git+$url.git#tag=$pkgver")
+sha256sums=('SKIP')
 
 package() {
   depends+=('perl')

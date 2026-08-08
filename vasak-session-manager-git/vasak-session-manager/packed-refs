@@ -1,0 +1,6 @@
+# pack-refs with: peeled fully-peeled sorted 
+0e2179c37e9ff1ec51bea71b9f39b1002a31b28a refs/heads/dependabot/cargo/src-tauri/serde_with-3.21.0
+2f36850f05e4f5440f921b06c709e78187ead949 refs/heads/main
+dae848be314c63e8158aad6ec476465cbe116b31 refs/pull/1/head
+0e2179c37e9ff1ec51bea71b9f39b1002a31b28a refs/pull/2/head
+ff2cca2c7f1fb84483de4455fc82708f5f86a883 refs/pull/2/merge

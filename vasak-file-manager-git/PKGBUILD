@@ -43,6 +43,12 @@ makedepends=(
 source=("git+${url}.git")
 sha256sums=('SKIP')
 
+# makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
+# assembly (ring, via rustls) then emit LTO bitcode that rustc's linker cannot
+# resolve, failing with undefined ring_core_* symbols. Rust does its own LTO via
+# the Cargo release profile, so makepkg's is redundant here as well as harmful.
+options=('!lto')
+
 prepare() {
     cd "$srcdir/$pkgname"
     # Instalar dependencias con bun
