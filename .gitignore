@@ -1,5 +1,19 @@
-*/**.pkg.tar.*
-**/pkg/
-**/src/
-*/**.tar.gz 
+# makepkg leaves everything it produces inside each package directory: the build
+# tree (src/, pkg/), the finished packages, downloaded tarballs, and — for git+
+# sources — a cached bare clone of the upstream repo named after it.
+#
+# A package directory should only ever hold plain files: PKGBUILD, .install,
+# .service, patches. So ignoring every nested directory covers the clones of
+# packages that don't exist yet, instead of needing a new rule each time one is
+# added.
+*/*/
+
+# Build output
+*/*.pkg.tar.*
+*/*.tar.gz
+*/*.tar.xz
+*/*.tar.zst
+*/*.src.tar.*
+
+# Large asset tree kept out of the packaging repo
 wallpapers/
