@@ -11,6 +11,7 @@ depends=('dbus' 'pam' 'glibc' 'gcc-libs')
 makedepends=('git' 'cargo' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
+install="vasak-keyring.install"
 
 # makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
 # assembly (ring, via rustls) then emit LTO bitcode that rustc's linker cannot
@@ -44,18 +45,4 @@ package() {
     # must load the module, e.g. in /etc/pam.d/<dm>:
     #   session optional pam_vasak_keyring.so
     # This is intentionally NOT applied automatically to avoid breaking login.
-}
-
-post_install() {
-    mkdir -p /etc/systemd/user/default.target.wants
-    ln -sf /usr/lib/systemd/user/vasak-keyring.service \
-        /etc/systemd/user/default.target.wants/vasak-keyring.service
-}
-
-post_upgrade() {
-    post_install
-}
-
-post_remove() {
-    rm -f /etc/systemd/user/default.target.wants/vasak-keyring.service
 }

@@ -27,6 +27,7 @@ makedepends=(
 )
 source=("git+${url}.git")
 sha256sums=('SKIP')
+install="vasak-terminal.install"
 
 # makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
 # assembly (ring, via rustls) then emit LTO bitcode that rustc's linker cannot
@@ -56,18 +57,4 @@ build() {
 
 package() {
     cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_*/data/* "${pkgdir}"
-}
-
-post_install() {
-  gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
-  update-desktop-database -q
-}
-
-post_upgrade() {
-  post_install
-}
-
-post_remove() {
-  gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
-  update-desktop-database -q
 }

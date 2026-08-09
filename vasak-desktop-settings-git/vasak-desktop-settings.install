@@ -1,0 +1,12 @@
+post_install() {
+    # Idle lock runs under systemd, not wayfire autostart.
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-idle.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
+}
+post_upgrade() {
+    post_install
+}
+post_remove() {
+    rm -f /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
+}

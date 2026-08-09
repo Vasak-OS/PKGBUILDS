@@ -28,6 +28,7 @@ makedepends=(
 source=("${pkgname}::git+${url}.git"
         "polkit-vasak-agent.service")
 sha256sums=('SKIP'
+install="polkit-vasak-agent.install"
 
 # makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
 # assembly (ring, via rustls) then emit LTO bitcode that rustc's linker cannot
@@ -66,25 +67,4 @@ package() {
     chmod u+s "${pkgdir}/usr/bin/polkit-agent-helper-dbus"
     install -Dm644 "$srcdir/polkit-vasak-agent.service" \
         "${pkgdir}/usr/lib/systemd/user/polkit-vasak-agent.service"
-}
-
-post_install() {
-    # Enable as a graphical-session user service (started by uwsm). Remove any
-    # stale default.target.wants link from previous versions.
-    rm -f /etc/systemd/user/default.target.wants/polkit-vasak-agent.service
-    mkdir -p /etc/systemd/user/graphical-session.target.wants
-    ln -sf /usr/lib/systemd/user/polkit-vasak-agent.service \
-        /etc/systemd/user/graphical-session.target.wants/polkit-vasak-agent.service
-    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
-    update-desktop-database -q
-}
-
-post_upgrade() {
-    post_install
-}
-
-post_remove() {
-    rm -f /etc/systemd/user/graphical-session.target.wants/polkit-vasak-agent.service
-    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
-    update-desktop-database -q
 }

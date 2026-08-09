@@ -1,0 +1,18 @@
+post_install() {
+    # Enable as a graphical-session user service (started by uwsm). Remove any
+    # stale default.target.wants link from previous versions.
+    rm -f /etc/systemd/user/default.target.wants/polkit-vasak-agent.service
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/polkit-vasak-agent.service \
+        /etc/systemd/user/graphical-session.target.wants/polkit-vasak-agent.service
+    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+    update-desktop-database -q
+}
+post_upgrade() {
+    post_install
+}
+post_remove() {
+    rm -f /etc/systemd/user/graphical-session.target.wants/polkit-vasak-agent.service
+    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+    update-desktop-database -q
+}
