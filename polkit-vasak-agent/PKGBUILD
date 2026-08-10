@@ -28,6 +28,7 @@ makedepends=(
 source=("${pkgname}::git+${url}.git"
         "polkit-vasak-agent.service")
 sha256sums=('SKIP'
+            '4e0e18afb5d784a5a8426e781cea588f1efc62c7ac0e0b32a6503884c4f391fd')
 install="polkit-vasak-agent.install"
 
 # makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
@@ -35,7 +36,6 @@ install="polkit-vasak-agent.install"
 # resolve, failing with undefined ring_core_* symbols. Rust does its own LTO via
 # the Cargo release profile, so makepkg's is redundant here as well as harmful.
 options=('!lto')
-            'SKIP')
 
 prepare() {
     cd "$srcdir/$pkgname"
