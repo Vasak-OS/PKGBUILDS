@@ -1,0 +1,22 @@
+post_install() {
+    systemctl daemon-reload
+    # D-Bus activated, so it does not need enabling: the first request starts it.
+    # Reloading the bus configuration is what makes that possible right away
+    # instead of only after the next boot.
+    systemctl reload dbus.service 2>/dev/null || true
+}
+
+post_upgrade() {
+    systemctl daemon-reload
+    systemctl reload dbus.service 2>/dev/null || true
+    systemctl try-restart vasak-accounts.service
+}
+
+pre_remove() {
+    systemctl stop vasak-accounts.service 2>/dev/null || true
+}
+
+post_remove() {
+    systemctl daemon-reload
+    echo "Las cuentas y sus tokens quedan en /var/lib/vasak-accounts."
+}

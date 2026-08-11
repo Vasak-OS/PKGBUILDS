@@ -3,14 +3,17 @@
 pkgname=vasak-accounts
 pkgver=0.1.0
 pkgrel=1
-pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2, per-app ACL) for VasakOS"
+pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2) for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPL3')
-depends=('dbus' 'glibc' 'gcc-libs')
+# The permission service decides who may reach a token; the daemon refuses
+# every request without it.
+depends=('dbus' 'glibc' 'gcc-libs' 'vasak-permissions')
 makedepends=('git' 'cargo' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
+install="vasak-accounts.install"
 
 # makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
 # assembly (ring, via rustls) then emit LTO bitcode that rustc's linker cannot
@@ -28,9 +31,14 @@ package() {
 
     install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
 
-    # D-Bus-activated systemd user service (starts on first token request).
-    install -Dm644 "$pkgname.service" \
-        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
-    install -Dm644 "ar.net.vasak.os.AccountManager.service" \
-        "$pkgdir/usr/share/dbus-1/services/ar.net.vasak.os.AccountManager.service"
+    # A *system* service now: the tokens live in root-owned files, so the daemon
+    # cannot run in the session where any program could replace it. The service
+    # only accepts /usr/bin/vasak-accounts as a delegate when asking the
+    # permission service on an application's behalf, so this path matters.
+    install -Dm644 "packaging/$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/system/$pkgname.service"
+    install -Dm644 "packaging/ar.net.vasak.os.AccountManager.service" \
+        "$pkgdir/usr/share/dbus-1/system-services/ar.net.vasak.os.AccountManager.service"
+    install -Dm644 "packaging/ar.net.vasak.os.AccountManager.conf" \
+        "$pkgdir/usr/share/dbus-1/system.d/ar.net.vasak.os.AccountManager.conf"
 }
