@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-keyring
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
 arch=('x86_64')

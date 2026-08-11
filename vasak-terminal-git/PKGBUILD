@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-terminal
-pkgver=0.2.2
-pkgrel=3
+pkgver=0.3.0
+pkgrel=1
 pkgdesc="Terminal for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"

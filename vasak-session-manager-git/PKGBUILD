@@ -1,6 +1,6 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 pkgname=vasak-session-manager
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="VasakOS session manager: display manager / greeter (Rust + Vue + Tauri)"
 arch=('x86_64')

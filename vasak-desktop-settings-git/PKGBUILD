@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -9,11 +9,21 @@ url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')
 makedepends=('git')
 depends=(
-    'polkit-gnome'
+    # vasak-session execs uwsm; without it the session dies before the
+    # compositor starts and the user is dropped straight back to the greeter.
+    'uwsm'
     'wayfire'
+    # Autostarted from wayfire.ini: no shell without it, so it is not optional.
+    'vasak-desktop'
+    # Replaces polkit-gnome, which VasakOS no longer ships.
+    'polkit-vasak-agent'
     'vasakos-icon-theme'
     'swayidle'
     'gtklock'
+    # File pickers and screen sharing. The wlroots backend is the one that can
+    # capture a Wayfire output.
+    'xdg-desktop-portal'
+    'xdg-desktop-portal-wlr'
 )
 source=("git+${url}.git")
 sha256sums=('SKIP')
