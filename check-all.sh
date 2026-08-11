@@ -105,7 +105,11 @@ report() { printf '  %-10s %s\n' "$1" "$2"; }
 for app in "${APPS[@]}"; do
   wanted "$app" || continue
   dir="${DIR_OF[$app]:-$WORKSPACE/$app}"
-  echo "── $app"
+  # Say which commit is being checked. Without it, an unexpected error is
+  # indistinguishable from checking the wrong tree — and telling those apart by
+  # hand costs far more than printing eleven characters.
+  commit="$(cd "$dir" && git rev-parse --short HEAD 2>/dev/null)"
+  echo "── $app${commit:+ ${DIM}@ $commit${OFF}}"
 
   # ── frontend ───────────────────────────────────────────────────────────────
   if [[ -f "$dir/package.json" ]]; then

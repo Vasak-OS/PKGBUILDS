@@ -360,10 +360,11 @@ if [[ $CHECK -eq 1 && -x "$REPO_DIR/check-all.sh" ]]; then
     # builds from the remote, so a local checkout that is behind reports errors
     # for code that was already fixed — and one that is ahead hides errors that
     # would only appear at build time. Neither is what gets packaged.
+    # Always refresh, never "only if missing": an src/ left over from an earlier
+    # run is exactly the stale tree this is meant to avoid checking, and it is
+    # indistinguishable from a fresh one by looking at it.
     src="$REPO_DIR/$name/src/$app"
-    if [[ ! -d "$src" ]]; then
-      (cd "$REPO_DIR/$name" && makepkg -o --nodeps --noconfirm >/dev/null 2>&1) || true
-    fi
+    (cd "$REPO_DIR/$name" && makepkg -o --nodeps --noconfirm >/dev/null 2>&1) || true
 
     if [[ -d "$src" ]]; then
       CHECK_ARGS+=(-D "$src")
