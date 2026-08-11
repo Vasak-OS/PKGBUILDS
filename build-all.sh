@@ -156,8 +156,25 @@ pkg_name_of() {
   echo "${base%-*}"   # pkgver
 }
 
-# Collect candidate package dirs (those with a PKGBUILD).
-mapfile -t ALL < <(cd "$REPO_DIR" && for d in */; do [[ -f "${d}PKGBUILD" ]] && echo "${d%/}"; done | sort)
+# Packages other VasakOS packages depend on, built before the rest.
+#
+# Alphabetical order is fine until one of ours needs another of ours: without
+# this, vasak-accounts is reached before vasak-permissions and makepkg cannot
+# resolve a dependency that has not been built yet.
+FIRST=(vasak-permissions)
+
+# Collect candidate package dirs (those with a PKGBUILD), dependencies first.
+mapfile -t ALL < <(
+  cd "$REPO_DIR" || exit
+  for d in */; do [[ -f "${d}PKGBUILD" ]] && echo "${d%/}"; done | sort |
+    awk -v first="${FIRST[*]}" '
+      BEGIN { split(first, f, " "); for (i in f) rank[f[i]] = 1 }
+      { if ($0 in rank) early[++e] = $0; else late[++l] = $0 }
+      END {
+        for (i = 1; i <= e; i++) print early[i]
+        for (i = 1; i <= l; i++) print late[i]
+      }'
+)
 
 # An explicitly named directory is built no matter what: it is how you force a
 # rebuild, so exclusion and twin-preference must not filter it out.
