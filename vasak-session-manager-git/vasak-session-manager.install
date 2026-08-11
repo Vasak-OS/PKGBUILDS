@@ -1,0 +1,82 @@
+_config=/etc/greetd/config.toml
+_reference=/usr/share/vasak-session-manager/greetd.toml
+
+# Whether the greetd configuration is one we should replace.
+#
+# Yes when it is missing, when it is still greetd's own default (which runs
+# `agreety`, a text prompt), or when its autologin names a user who does not
+# exist — that last one is the live image's configuration copied onto a real
+# installation, where the account it names was never created and the login
+# either fails or loops.
+#
+# No when somebody has written their own: overwriting a deliberate choice is
+# worse than leaving a system on a greeter it was told to use.
+_needs_config() {
+    [ -f "$_config" ] || return 0
+    grep -q 'agreety' "$_config" && return 0
+
+    _autologin_user="$(sed -n '/^\[initial_session\]/,/^\[[^i]/ s/^[[:space:]]*user[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$_config" | head -n 1)"
+    [ -n "$_autologin_user" ] && ! id -u "$_autologin_user" >/dev/null 2>&1 && return 0
+
+    grep -q 'vasak-session-manager-launch' "$_config" && return 1
+    return 1
+}
+
+_install_config() {
+    [ -f "$_reference" ] || return 0
+
+    mkdir -p /etc/greetd
+    if [ -f "$_config" ]; then
+        cp -a "$_config" "$_config.pacsave-vasak"
+        echo ":: La configuración anterior de greetd quedó en $_config.pacsave-vasak"
+    fi
+    install -Dm644 "$_reference" "$_config"
+}
+
+# Makes greetd the display manager, but only from lightdm or from nothing.
+#
+# Switching what starts the graphical session is intrusive, so it is done only
+# where there is nothing to lose: an unconfigured system, or the lightdm that
+# VasakOS used to ship and no longer does. Anything else the administrator
+# chose is left alone and reported.
+_take_over_display_manager() {
+    _current="$(readlink -f /etc/systemd/system/display-manager.service 2>/dev/null)"
+
+    case "$_current" in
+        *greetd*)
+            return 0
+            ;;
+        '' | *lightdm*)
+            systemctl disable lightdm.service >/dev/null 2>&1 || true
+            systemctl enable greetd.service >/dev/null 2>&1 || true
+            echo ":: greetd es ahora el gestor de pantalla (antes: ${_current:-ninguno})"
+            echo ":: Reiniciá para entrar con la pantalla de inicio de VasakOS."
+            ;;
+        *)
+            echo ":: Se conserva $(basename "$_current") como gestor de pantalla."
+            echo ":: Para usar la pantalla de VasakOS: systemctl enable greetd.service"
+            ;;
+    esac
+}
+
+post_install() {
+    _needs_config && _install_config
+    _take_over_display_manager
+    # Fails harmlessly where systemd is not running, such as the chroot the ISO
+    # is assembled in.
+    systemctl daemon-reload >/dev/null 2>&1 || true
+}
+
+post_upgrade() {
+    # Same guards as a fresh install: a configuration somebody wrote is kept,
+    # and a display manager somebody chose is kept.
+    _needs_config && _install_config
+    _take_over_display_manager
+    systemctl daemon-reload >/dev/null 2>&1 || true
+}
+
+post_remove() {
+    echo ":: greetd sigue habilitado como gestor de pantalla."
+    echo ":: Sin este paquete no hay pantalla de inicio: instalá otro greeter,"
+    echo ":: o cambiá de gestor antes de reiniciar."
+}
