@@ -1,0 +1,33 @@
+post_install() {
+    # System service: it has to be running before anyone logs in, because the
+    # first thing a session does may already need to ask.
+    systemctl daemon-reload
+    systemctl enable --now vasak-permissions.service
+
+    # The dialog agent belongs to the graphical session.
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-permissions-agent.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-permissions-agent.service
+}
+
+post_upgrade() {
+    systemctl daemon-reload
+    systemctl try-restart vasak-permissions.service
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-permissions-agent.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-permissions-agent.service
+}
+
+pre_remove() {
+    systemctl disable --now vasak-permissions.service
+}
+
+post_remove() {
+    systemctl daemon-reload
+    rm -f /etc/systemd/user/graphical-session.target.wants/vasak-permissions-agent.service
+
+    # The recorded decisions are deliberately left in place: removing the
+    # package should not silently discard what the user has allowed and
+    # refused, in case it is installed again.
+    echo "Las decisiones de permisos quedan en /var/lib/vasak-permissions."
+}

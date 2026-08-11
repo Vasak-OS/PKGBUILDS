@@ -1,0 +1,56 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+pkgname=vasak-permissions
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="System permission service for VasakOS: camera, microphone, screen and online accounts"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/vasak-permissions"
+license=('MIT')
+# polkit guards every change made from Settings; without it the management
+# calls are refused and the switches cannot be moved.
+depends=('webkit2gtk-4.1' 'gtk3' 'dbus' 'polkit')
+makedepends=('git' 'cargo' 'bun' 'rust')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+install="vasak-permissions.install"
+
+# makepkg's global LTO injects -flto into CFLAGS/LDFLAGS, which breaks crates
+# that build C or assembly. Cargo does its own LTO in the release profile, so
+# makepkg's is redundant here as well as harmful.
+options=('!lto')
+
+build() {
+    cd "$srcdir/$pkgname"
+
+    # The service is plain Rust: building it on its own keeps the JS toolchain
+    # out of the way, and it is the piece that has to work even if the graphical
+    # half fails to build.
+    cargo build --release --locked -p vasak-permissions-daemon
+
+    bun install
+    bun run tauri build
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    install -Dm755 "target/release/vasak-permissions" \
+        "$pkgdir/usr/bin/vasak-permissions"
+    # The service only accepts this exact path as the dialog agent, which is
+    # what stops a program the user can write from registering itself and
+    # approving its own requests. Installing it anywhere else breaks that.
+    install -Dm755 "target/release/vasak-permissions-agent" \
+        "$pkgdir/usr/bin/vasak-permissions-agent"
+
+    install -Dm644 "packaging/ar.net.vasak.os.Permissions.conf" \
+        "$pkgdir/usr/share/dbus-1/system.d/ar.net.vasak.os.Permissions.conf"
+    install -Dm644 "packaging/ar.net.vasak.os.permissions.policy" \
+        "$pkgdir/usr/share/polkit-1/actions/ar.net.vasak.os.permissions.policy"
+
+    install -Dm644 "packaging/vasak-permissions.service" \
+        "$pkgdir/usr/lib/systemd/system/vasak-permissions.service"
+    install -Dm644 "packaging/vasak-permissions-agent.service" \
+        "$pkgdir/usr/lib/systemd/user/vasak-permissions-agent.service"
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
