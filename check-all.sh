@@ -79,6 +79,7 @@ mapfile -t APPS < <(
 
 FAILED=()
 UNPUSHED=()
+STALE=()
 declare -A NOTE=()
 
 report() { printf '  %-10s %s\n' "$1" "$2"; }
@@ -143,17 +144,30 @@ for app in "${APPS[@]}"; do
   # ── git ────────────────────────────────────────────────────────────────────
   if [[ $DO_GIT -eq 1 && -d "$dir/.git" ]]; then
     ahead="$(cd "$dir" && git rev-list --count '@{u}..HEAD' 2>/dev/null)"
+    behind="$(cd "$dir" && git rev-list --count 'HEAD..@{u}' 2>/dev/null)"
     dirty="$(cd "$dir" && git status --porcelain 2>/dev/null | wc -l)"
     if [[ -z "$ahead" ]]; then
       report git "${YELLOW}no upstream branch${OFF}"
       UNPUSHED+=("$app")
       NOTE["$app"]="sin rama remota"
-    elif [[ "$ahead" -gt 0 ]]; then
-      report git "${YELLOW}${ahead} commit(s) unpushed${OFF} ${DIM}— makepkg builds the pushed branch${OFF}"
-      UNPUSHED+=("$app")
-      NOTE["$app"]="$ahead sin pushear"
-    elif [[ "$dirty" -gt 0 ]]; then
-      report git "${DIM}${dirty} uncommitted file(s)${OFF}"
+    else
+      if [[ "$ahead" -gt 0 ]]; then
+        report git "${YELLOW}${ahead} commit(s) unpushed${OFF} ${DIM}— makepkg builds the pushed branch${OFF}"
+        UNPUSHED+=("$app")
+        NOTE["$app"]="$ahead sin pushear"
+      fi
+      # Behind matters as much as ahead, and is easier to misread. This check
+      # runs against the working copy while makepkg builds from the remote, so
+      # an out-of-date checkout reports failures for code that was fixed
+      # upstream — and blocks a build that would have succeeded.
+      if [[ "$behind" -gt 0 ]]; then
+        report git "${YELLOW}${behind} commit(s) behind${OFF} ${DIM}— esta copia está vieja; los errores pueden estar ya corregidos${OFF}"
+        STALE+=("$app")
+        NOTE["$app"]="${NOTE[$app]:+${NOTE[$app]}, }$behind atrás"
+      fi
+      if [[ "$ahead" -eq 0 && "$behind" -eq 0 && "$dirty" -gt 0 ]]; then
+        report git "${DIM}${dirty} uncommitted file(s)${OFF}"
+      fi
     fi
   fi
 done
@@ -165,6 +179,18 @@ if [[ ${#FAILED[@]} -gt 0 ]]; then
   echo "${RED}No compilan (${#FAILED[@]}):${OFF} ${FAILED[*]}"
 else
   echo "${GREEN}Todas las apps compilan.${OFF}"
+fi
+
+if [[ ${#STALE[@]} -gt 0 ]]; then
+  echo
+  echo "${YELLOW}Atención:${OFF} estas copias locales están atrasadas respecto del remoto."
+  echo "Esta comprobación lee la copia local, pero makepkg compila desde el remoto:"
+  echo "los errores de arriba pueden estar ya corregidos. Actualizá antes de creerles:"
+  for app in "${STALE[@]}"; do
+    printf '  %-24s %s\n' "$app" "${NOTE[$app]}"
+  done
+  echo
+  echo "  git -C <repo> pull"
 fi
 
 if [[ ${#UNPUSHED[@]} -gt 0 ]]; then
