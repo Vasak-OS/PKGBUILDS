@@ -8,7 +8,7 @@ url="https://github.com/Vasak-OS/vasak-permissions"
 license=('MIT')
 # polkit guards every change made from Settings; without it the management
 # calls are refused and the switches cannot be moved.
-depends=('webkit2gtk-4.1' 'gtk3' 'dbus' 'polkit')
+depends=('webkit2gtk-4.1' 'gtk3' 'dbus' 'polkit' 'xdg-desktop-portal')
 makedepends=('git' 'cargo' 'bun' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
@@ -51,6 +51,14 @@ package() {
         "$pkgdir/usr/lib/systemd/system/vasak-permissions.service"
     install -Dm644 "packaging/vasak-permissions-agent.service" \
         "$pkgdir/usr/lib/systemd/user/vasak-permissions-agent.service"
+
+    # The agent also serves the desktop portal's permission dialog, so those
+    # prompts look like the rest of VasakOS. The .portal file is how the portal
+    # finds it; without it the file is never read and GTK's dialog is used.
+    install -Dm644 "packaging/vasak.portal" \
+        "$pkgdir/usr/share/xdg-desktop-portal/portals/vasak.portal"
+    install -Dm644 "packaging/org.freedesktop.impl.portal.desktop.vasak.service" \
+        "$pkgdir/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.vasak.service"
 
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
