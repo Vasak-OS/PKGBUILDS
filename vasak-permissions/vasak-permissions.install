@@ -1,8 +1,14 @@
 post_install() {
     # System service: it has to be running before anyone logs in, because the
     # first thing a session does may already need to ask.
-    systemctl daemon-reload
-    systemctl enable --now vasak-permissions.service
+    #
+    # Enabling and starting are separate on purpose. The ISO is assembled in a
+    # chroot with no running systemd, where `--now` fails and takes the whole
+    # scriptlet's exit status with it — so the symlink gets written and the
+    # start is allowed to fail.
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl enable vasak-permissions.service 2>/dev/null || true
+    systemctl start vasak-permissions.service 2>/dev/null || true
 
     # The dialog agent belongs to the graphical session.
     mkdir -p /etc/systemd/user/graphical-session.target.wants
@@ -11,19 +17,19 @@ post_install() {
 }
 
 post_upgrade() {
-    systemctl daemon-reload
-    systemctl try-restart vasak-permissions.service
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl try-restart vasak-permissions.service 2>/dev/null || true
     mkdir -p /etc/systemd/user/graphical-session.target.wants
     ln -sf /usr/lib/systemd/user/vasak-permissions-agent.service \
         /etc/systemd/user/graphical-session.target.wants/vasak-permissions-agent.service
 }
 
 pre_remove() {
-    systemctl disable --now vasak-permissions.service
+    systemctl disable --now vasak-permissions.service 2>/dev/null || true
 }
 
 post_remove() {
-    systemctl daemon-reload
+    systemctl daemon-reload 2>/dev/null || true
     rm -f /etc/systemd/user/graphical-session.target.wants/vasak-permissions-agent.service
 
     # The recorded decisions are deliberately left in place: removing the
