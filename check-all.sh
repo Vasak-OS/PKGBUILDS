@@ -25,6 +25,10 @@
 # Options:
 #   -a, --app NAME     Check only this app directory (repeatable).
 #   -t, --tests        Also run `cargo test --lib` for each Rust backend.
+#       -D, --dir DIR  Check this directory instead of the working copy. This is
+#                      how the sources makepkg fetched are checked — the code
+#                      that will actually be packaged, rather than whatever the
+#                      local checkout happens to be at.
 #       --no-install   Don't run `bun install` when node_modules is missing.
 #       --no-git       Skip the unpushed-commits check.
 #   -h, --help         Show this help.
@@ -37,6 +41,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE="$(cd "$REPO_DIR/.." && pwd)"
 
 ONLY=()
+DIRS=()
 RUN_TESTS=0
 DO_INSTALL=1
 DO_GIT=1
@@ -46,6 +51,7 @@ usage() { sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit "${1:-
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -a|--app) ONLY+=("${2:?--app needs a name}"); shift 2 ;;
+    -D|--dir) DIRS+=("${2:?--dir needs a path}"); shift 2 ;;
     -t|--tests) RUN_TESTS=1; shift ;;
     --no-install) DO_INSTALL=0; shift ;;
     --no-git) DO_GIT=0; shift ;;
@@ -69,13 +75,25 @@ wanted() {
   return 1
 }
 
-# Apps are workspace dirs carrying a frontend or a Tauri backend.
-mapfile -t APPS < <(
-  cd "$WORKSPACE" && for d in */; do
-    name="${d%/}"
-    [[ -f "$name/package.json" || -f "$name/src-tauri/Cargo.toml" ]] && echo "$name"
-  done | sort
-)
+# Apps are workspace dirs carrying a frontend or a Tauri backend — unless
+# explicit directories were given, which is how the sources makepkg fetched are
+# checked instead of the working copy.
+declare -A DIR_OF=()
+if [[ ${#DIRS[@]} -gt 0 ]]; then
+  APPS=()
+  for d in "${DIRS[@]}"; do
+    name="$(basename "$d")"
+    APPS+=("$name")
+    DIR_OF["$name"]="$d"
+  done
+else
+  mapfile -t APPS < <(
+    cd "$WORKSPACE" && for d in */; do
+      name="${d%/}"
+      [[ -f "$name/package.json" || -f "$name/src-tauri/Cargo.toml" ]] && echo "$name"
+    done | sort
+  )
+fi
 
 FAILED=()
 UNPUSHED=()
@@ -86,7 +104,7 @@ report() { printf '  %-10s %s\n' "$1" "$2"; }
 
 for app in "${APPS[@]}"; do
   wanted "$app" || continue
-  dir="$WORKSPACE/$app"
+  dir="${DIR_OF[$app]:-$WORKSPACE/$app}"
   echo "── $app"
 
   # ── frontend ───────────────────────────────────────────────────────────────
@@ -142,7 +160,7 @@ for app in "${APPS[@]}"; do
   fi
 
   # ── git ────────────────────────────────────────────────────────────────────
-  if [[ $DO_GIT -eq 1 && -d "$dir/.git" ]]; then
+  if [[ $DO_GIT -eq 1 && ${#DIRS[@]} -eq 0 && -d "$dir/.git" ]]; then
     ahead="$(cd "$dir" && git rev-list --count '@{u}..HEAD' 2>/dev/null)"
     behind="$(cd "$dir" && git rev-list --count 'HEAD..@{u}' 2>/dev/null)"
     dirty="$(cd "$dir" && git status --porcelain 2>/dev/null | wc -l)"

@@ -57,9 +57,12 @@
 #
 # Before building, check-all.sh runs a fast pre-flight on the apps that are
 # actually going to be built: a Tauri PKGBUILD fails on a single type error, and
-# finding that out after a full build wastes a lot of time. It also warns about
-# unpushed commits, since the PKGBUILDs fetch with git+https and therefore build
-# the pushed branch, not your working copy.
+# finding that out after a full build wastes a lot of time.
+#
+# It checks the sources makepkg fetched, not your working copy. The PKGBUILDs
+# fetch with git+https and build the pushed branch, so a checkout that is behind
+# reports errors for code already fixed upstream, and one that is ahead hides
+# errors that only appear at build time. Neither is what ends up in the package.
 #
 # makepkg runs with: -sf --noconfirm --needed  (installs deps, overwrites).
 # Do not run as root — makepkg refuses to.
@@ -352,7 +355,25 @@ if [[ $CHECK -eq 1 && -x "$REPO_DIR/check-all.sh" ]]; then
   CHECK_ARGS=()
   for name in "${BUILD[@]}"; do
     app="${name%-git}"
-    [[ -d "$WORKSPACE/$app" ]] && CHECK_ARGS+=(-a "$app")
+
+    # Check the sources makepkg fetched, not the working copy. The PKGBUILD
+    # builds from the remote, so a local checkout that is behind reports errors
+    # for code that was already fixed — and one that is ahead hides errors that
+    # would only appear at build time. Neither is what gets packaged.
+    src="$REPO_DIR/$name/src/$app"
+    if [[ ! -d "$src" ]]; then
+      (cd "$REPO_DIR/$name" && makepkg -o --nodeps --noconfirm >/dev/null 2>&1) || true
+    fi
+
+    if [[ -d "$src" ]]; then
+      CHECK_ARGS+=(-D "$src")
+    elif [[ -d "$WORKSPACE/$app" ]]; then
+      # No fetched tree — a package built from something other than a git
+      # source. The working copy is the best available stand-in, and saying so
+      # is better than checking nothing.
+      echo "${YELLOW}   $app: sin fuentes descargadas, se revisa la copia local${OFF}" >&2
+      CHECK_ARGS+=(-a "$app")
+    fi
   done
   if [[ ${#CHECK_ARGS[@]} -gt 0 ]]; then
     echo "${CYAN}==> Pre-flight: checking the apps about to be built${OFF}"
