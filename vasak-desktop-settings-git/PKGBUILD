@@ -35,6 +35,11 @@ package() {
     install -dm755 $pkgdir/usr/share/glib-2.0/schemas
     install -dm755 $pkgdir/etc/skel
     cp -r $srcdir/$pkgname/etc/skel $pkgdir/etc/
+
+    # Lets pinentry find the graphical dialog even when gpg-agent was started
+    # without the session environment.
+    install -Dm755 "$srcdir/$pkgname/etc/pinentry/preexec" \
+        "$pkgdir/etc/pinentry/preexec"
     cp -r $srcdir/$pkgname/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
