@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-terminal
-pkgver=0.3.0
+pkgver=0.3.1
 pkgrel=1
 pkgdesc="Terminal for VasakOS"
 arch=('x86_64')
@@ -57,4 +57,11 @@ build() {
 
 package() {
     cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_*/data/* "${pkgdir}"
+
+    # The i18n plugin resolves translations at runtime and only probes paths
+    # relative to the binary and the working directory, so an installed build
+    # finds nothing unless the locales are shipped where lib.rs looks for them.
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
+    install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.json \
+        "${pkgdir}/usr/share/${pkgname}/locales/"
 }
