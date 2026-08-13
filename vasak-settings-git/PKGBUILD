@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.2.1
+pkgver=0.2.2
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
