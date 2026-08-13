@@ -1,0 +1,71 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-press-and-hold
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Press & hold a key to pick accented characters on Wayland, for VasakOS"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL-3.0-or-later')
+depends=(
+    'gtk3'
+    'webkit2gtk-4.1'
+    'libxkbcommon'
+    'libappindicator-gtk3'
+    # The picker is drawn as a layer-shell surface so it can place itself next
+    # to the caret instead of wherever the compositor decides.
+    'gtk-layer-shell'
+)
+makedepends=(
+    'git'
+    'openssl'
+    'cargo'
+    'bun'
+    'rust'
+)
+source=("git+${url}.git")
+sha256sums=('SKIP')
+install="$pkgname.install"
+
+# makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
+# assembly then emit LTO bitcode that rustc's linker cannot resolve. Rust does
+# its own LTO via the Cargo release profile, so makepkg's is redundant here as
+# well as harmful.
+options=('!lto')
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    bun install
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    bun run tauri build
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    install -Dm755 "src-tauri/target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # Reading the keyboard means reading the input devices. The rule tags them
+    # with uaccess so the *active session* gets them, instead of adding the user
+    # to the input group, which would grant it to every session at once and for
+    # good.
+    install -Dm644 "99-$pkgname.rules" \
+        "$pkgdir/usr/lib/udev/rules.d/99-$pkgname.rules"
+
+    # Nothing started the daemon before: no unit, no autostart entry. The
+    # feature was installed and simply never ran, which from the outside looks
+    # exactly like it not working.
+    install -Dm644 "packaging/$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+
+    for size in 32x32 128x128 128x128@2x; do
+        [[ -f "src-tauri/icons/${size}.png" ]] || continue
+        install -Dm644 "src-tauri/icons/${size}.png" \
+            "$pkgdir/usr/share/icons/hicolor/${size}/apps/$pkgname.png"
+    done
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

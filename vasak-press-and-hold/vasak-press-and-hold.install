@@ -1,0 +1,42 @@
+_enable() {
+    # The daemon belongs to the graphical session, so it is wanted by
+    # graphical-session.target rather than enabled for the user by default:
+    # started any earlier there is no compositor to draw the picker on.
+    #
+    # The link is created here instead of shipped in the package because
+    # /etc/systemd/user is configuration — pacman must not own files there, and
+    # `systemctl --global enable` cannot run from a scriptlet in a chroot.
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-press-and-hold.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-press-and-hold.service
+
+    # The udev rule grants the session access to the input devices. Without a
+    # reload it only takes effect after the next boot, so the feature would
+    # appear broken until then.
+    udevadm control --reload-rules 2>/dev/null || true
+    udevadm trigger --subsystem-match=input 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+}
+
+post_install() {
+    _enable
+    cat <<'EOF'
+:: El selector de acentos arranca con la próxima sesión gráfica.
+   Mantené apretada una vocal para elegir entre sus variantes.
+EOF
+}
+
+post_upgrade() {
+    _enable
+    systemctl --user try-restart vasak-press-and-hold.service 2>/dev/null || true
+}
+
+pre_remove() {
+    systemctl --user stop vasak-press-and-hold.service 2>/dev/null || true
+}
+
+post_remove() {
+    rm -f /etc/systemd/user/graphical-session.target.wants/vasak-press-and-hold.service
+    systemctl daemon-reload 2>/dev/null || true
+    udevadm control --reload-rules 2>/dev/null || true
+}
