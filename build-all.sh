@@ -53,6 +53,8 @@
 #                         function, so their version reflects upstream HEAD
 #                         before the up-to-date check. Costs a source fetch.
 #       --no-check        Skip the check-all.sh pre-flight.
+#       --strict-check    Abort the whole run if any app fails the pre-flight,
+#                         instead of skipping just that package.
 #   -h, --help            Show this help.
 #
 # Before building, check-all.sh runs a fast pre-flight on the apps that are
@@ -78,6 +80,7 @@ INSTALL=0
 STOP=0
 PREFER_GIT=1
 CHECK=1
+STRICT_CHECK=0
 NODEPS=0
 FORCE_ALL=0
 DRY_RUN=0
@@ -107,6 +110,7 @@ while [[ $# -gt 0 ]]; do
     --no-clean) CLEAN_OLD=0; shift ;;
     --refresh-vcs) REFRESH_VCS=1; shift ;;
     --no-check) CHECK=0; shift ;;
+    --strict-check) STRICT_CHECK=1; shift ;;
     -d|--nodeps) NODEPS=1; shift ;;
     -h|--help) usage 0 ;;
     -*) echo "Unknown option: $1" >&2; usage 1 ;;
@@ -286,6 +290,7 @@ echo
 
 OK=()
 FAIL=()
+NOCOMPILE=()
 PUBLISHED=()
 REMOVED=()
 
@@ -378,13 +383,47 @@ if [[ $CHECK -eq 1 && -x "$REPO_DIR/check-all.sh" ]]; then
   done
   if [[ ${#CHECK_ARGS[@]} -gt 0 ]]; then
     echo "${CYAN}==> Pre-flight: checking the apps about to be built${OFF}"
-    if ! "$REPO_DIR/check-all.sh" "${CHECK_ARGS[@]}"; then
+
+    # The output is shown *and* parsed: one app that does not compile used to
+    # abort the whole run, which is the wrong trade when nineteen others are
+    # ready. Only the broken ones are dropped; the rest are built and the
+    # summary says what was left out.
+    check_log="$(mktemp)"
+    "$REPO_DIR/check-all.sh" "${CHECK_ARGS[@]}" >"$check_log" 2>&1 || true
+    cat "$check_log"
+
+    # check-all.sh prints "No compilan (N): app (frontend) app (backend)".
+    # Dropping the parenthesised part leaves the app names.
+    mapfile -t failed_apps < <(
+      sed -n 's/^No compilan ([0-9]*): //p' "$check_log" |
+        tr ' ' '\n' | grep -v '^(' | grep -v '^$' | sort -u
+    )
+    rm -f "$check_log"
+
+    for app in "${failed_apps[@]+"${failed_apps[@]}"}"; do
+      for i in "${!BUILD[@]}"; do
+        [[ "${BUILD[$i]%-git}" == "$app" ]] || continue
+        NOCOMPILE+=("${BUILD[$i]}")
+        unset 'BUILD[i]'
+      done
+    done
+    BUILD=("${BUILD[@]+"${BUILD[@]}"}")   # reindexar tras los unset
+
+    if [[ ${#NOCOMPILE[@]} -gt 0 ]]; then
       echo
-      echo "!! Aborting: at least one app does not compile, so its package cannot be" >&2
-      echo "   produced. Fix it, or re-run with --no-check to build the rest anyway." >&2
-      exit 1
+      if [[ $STRICT_CHECK -eq 1 ]]; then
+        echo "!! Abortando (--strict-check): ${NOCOMPILE[*]}" >&2
+        exit 1
+      fi
+      echo "${YELLOW}==> Se saltean ${#NOCOMPILE[@]} paquete(s) que no compilan:${OFF} ${NOCOMPILE[*]}"
+      echo "${DIM}    El resto se compila igual. Con --no-check se intentan todos.${OFF}"
     fi
     echo
+
+    if [[ ${#BUILD[@]} -eq 0 ]]; then
+      echo "${RED}No queda nada por compilar: todos los paquetes pendientes fallan el pre-vuelo.${OFF}" >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -423,6 +462,13 @@ echo "${GREEN}Built OK (${#OK[@]}):${OFF} ${OK[*]:-none}"
 [[ ${#FAIL[@]} -gt 0 ]] && echo "${RED}Failed (${#FAIL[@]}):${OFF} ${FAIL[*]}"
 [[ ${#BROKEN[@]} -gt 0 ]] && echo "${RED}Broken PKGBUILDs (${#BROKEN[@]}):${OFF} ${BROKEN[*]}"
 
+if [[ ${#NOCOMPILE[@]} -gt 0 ]]; then
+  echo "${YELLOW}No compilan, no se intentaron (${#NOCOMPILE[@]}):${OFF} ${NOCOMPILE[*]}"
+  echo "${DIM}  Su versión sigue siendo la que ya estaba publicada; el repositorio no queda"
+  echo "  a medias, sólo sin esa actualización. Arreglalos y volvé a correr: sólo se"
+  echo "  compilan esos.${OFF}"
+fi
+
 if [[ $USE_PACREPO -eq 1 ]]; then
   echo
   echo "Repository: $PACREPO"
@@ -439,4 +485,7 @@ Next: run repository-script/build-db.sh to regenerate and sign the database."
 fi
 
 [[ -n "$OUTPUT" ]] && echo "Packages copied to: $OUTPUT"
-[[ ${#FAIL[@]} -eq 0 && ${#BROKEN[@]} -eq 0 ]]
+
+# Saltear un paquete roto no es un éxito: la salida distinta de cero es lo que
+# hace que update-repo.sh y cualquier automatización se enteren.
+[[ ${#FAIL[@]} -eq 0 && ${#BROKEN[@]} -eq 0 && ${#NOCOMPILE[@]} -eq 0 ]]

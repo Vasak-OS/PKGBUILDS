@@ -37,7 +37,18 @@ When a release and a `-git` variant both exist (e.g. `vasak-desktop` /
 `./build-all.sh --help` lists every option.
 
 Since only the changed packages are built, the `check-all.sh` pre-flight runs
-only on the apps that are about to be built.
+only on the apps that are about to be built — against the sources makepkg
+fetched, not your working copy, because that is what ends up in the package.
+
+**An app that does not compile no longer stops the run.** That package is left
+out and everything else is built; the summary lists what was skipped, and the
+exit status is non-zero so nothing automated mistakes it for a clean run. The
+version already published stays in place, so the repository is never left half
+updated — just without that one update. Fix it and run again: only the skipped
+packages get rebuilt.
+
+Use `--strict-check` for the old behaviour (abort if anything fails the
+pre-flight), or `--no-check` to skip the pre-flight and try everything.
 
 The full release — build, publish, sign the database — lives one directory
 over:
