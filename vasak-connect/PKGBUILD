@@ -1,0 +1,76 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-connect
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Use your Android phone's apps as windows on VasakOS"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL-3.0-or-later')
+# adb talks to the phone and scrcpy draws each app in its own virtual display.
+# Neither is optional: without them the service starts and can do nothing.
+depends=(
+    'android-tools'
+    'scrcpy'
+    'dbus'
+)
+makedepends=(
+    'git'
+    'cargo'
+    'rust'
+    'systemd-libs'
+)
+source=("git+${url}.git")
+sha256sums=('SKIP')
+install="$pkgname.install"
+
+# No frontend and no `!lto`: this is plain Rust with no crates that build C or
+# assembly, so makepkg's LTO has nothing to break here. The Cargo release
+# profile does its own.
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    # Vendoring pins every dependency to what the lockfile says, which is what
+    # makes two builds of the same tag produce the same binary.
+    export RUSTUP_TOOLCHAIN=stable
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    cargo build --frozen --release --all-features
+}
+
+check() {
+    cd "$srcdir/$pkgname"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo test --frozen --release
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # A user service, not a system one: the phone belongs to whoever is logged
+    # in, the adb server is per-user, and the app windows have to open in that
+    # session.
+    install -Dm644 "packaging/$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+
+    # Lets the panel start the service on demand if it asks before
+    # graphical-session.target got that far.
+    install -Dm644 "packaging/ar.net.vasak.os.Connect.service" \
+        "$pkgdir/usr/share/dbus-1/services/ar.net.vasak.os.Connect.service"
+
+    # Grants the phone's USB interface to the active session through uaccess.
+    # It matches the ADB interface descriptor rather than a list of vendor ids,
+    # so it covers every manufacturer in one line.
+    install -Dm644 "packaging/70-$pkgname.rules" \
+        "$pkgdir/usr/lib/udev/rules.d/70-$pkgname.rules"
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

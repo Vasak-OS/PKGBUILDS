@@ -1,0 +1,46 @@
+_enable() {
+    # Wanted by the graphical session rather than enabled outright: started any
+    # earlier there is no session bus to own a name on, and no compositor to
+    # open app windows in.
+    #
+    # The link is written here instead of shipped in the package because
+    # /etc/systemd/user is configuration — pacman must not own files there.
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-connect.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-connect.service
+
+    # Without a reload the udev rule only applies to devices plugged in after
+    # the next boot, so a phone connected today would look unsupported.
+    udevadm control --reload-rules 2>/dev/null || true
+    udevadm trigger --subsystem-match=usb 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+}
+
+post_install() {
+    _enable
+    cat <<'EOF'
+:: Conectá un teléfono Android con la depuración USB activada y sus
+   aplicaciones van a aparecer en el menú del panel.
+
+   La primera vez el teléfono pregunta si permite la depuración: hay que
+   aceptarlo ahí. Para revocarlo después, «Revocar autorizaciones de
+   depuración USB» en las opciones de desarrollador del teléfono.
+EOF
+}
+
+post_upgrade() {
+    _enable
+    systemctl --user try-restart vasak-connect.service 2>/dev/null || true
+}
+
+pre_remove() {
+    # Stopping first closes the app windows in an orderly way; leaving them to
+    # die with the service means scrcpy processes surviving as orphans.
+    systemctl --user stop vasak-connect.service 2>/dev/null || true
+}
+
+post_remove() {
+    rm -f /etc/systemd/user/graphical-session.target.wants/vasak-connect.service
+    systemctl daemon-reload 2>/dev/null || true
+    udevadm control --reload-rules 2>/dev/null || true
+}
