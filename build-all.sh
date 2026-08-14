@@ -210,6 +210,35 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
   exit 0
 fi
 
+# ── Portability guard ─────────────────────────────────────────────────────────
+#
+# makepkg exports RUSTFLAGS from makepkg.conf, and some distributions ship
+# `-C target-cpu=native` there — CachyOS does, in
+# /etc/makepkg.conf.d/rust.conf. A package built with it runs on the machine
+# that compiled it and dies with SIGILL on anything older, because rustc emits
+# whatever the builder's CPU happens to support.
+#
+# Nothing about that failure looks like a build problem: the package builds,
+# installs and only crashes on somebody else's computer. So it is checked here,
+# where a new PKGBUILD cannot quietly inherit it.
+UNPINNED=()
+for name in "${TARGETS[@]}"; do
+  pkgbuild="$REPO_DIR/$name/PKGBUILD"
+  grep -qE '\bcargo\b|\brust\b|tauri' "$pkgbuild" || continue
+  grep -q 'target-cpu=x86-64' "$pkgbuild" || UNPINNED+=("$name")
+done
+
+if [[ ${#UNPINNED[@]} -gt 0 ]]; then
+  echo "${YELLOW}!! Estos paquetes Rust no fijan target-cpu y van a heredar el de la máquina:${OFF}" >&2
+  printf '     %s\n' "${UNPINNED[@]}" >&2
+  echo "${DIM}   Agregá en build(), antes de compilar:" >&2
+  echo "     unset CARGO_ENCODED_RUSTFLAGS" >&2
+  echo "     export RUSTFLAGS=\"-C opt-level=3 -C target-cpu=x86-64\"" >&2
+  echo "     export CARGO_BUILD_RUSTFLAGS=\"\$RUSTFLAGS\"" >&2
+  echo "   Sin eso el paquete sólo corre en CPUs como la que lo compiló.${OFF}" >&2
+  echo >&2
+fi
+
 # ── Decide what is out of date ────────────────────────────────────────────────
 #
 # `makepkg --packagelist` is cheap: it sources the PKGBUILD and prints the

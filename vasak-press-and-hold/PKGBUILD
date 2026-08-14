@@ -2,7 +2,7 @@
 
 pkgname=vasak-press-and-hold
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Press & hold a key to pick accented characters on Wayland, for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -40,6 +40,23 @@ prepare() {
 
 build() {
     cd "$srcdir/$pkgname"
+    # A package is not built for the machine that happens to compile it.
+    #
+    # makepkg exports RUSTFLAGS from makepkg.conf, and on this build host
+    # /etc/makepkg.conf.d/rust.conf sets `-C target-cpu=native`. That compiles
+    # for whatever CPU is doing the build: the result works there and dies with
+    # SIGILL everywhere older. Built on any Haswell-or-newer machine it emits
+    # AVX2 and BMI2 instructions, which no x86-64 from before 2013 has.
+    #
+    # `x86-64` is the baseline every 64-bit machine implements. Nothing else is
+    # given up: opt-level, LTO and codegen-units do not depend on the CPU model
+    # and stay exactly as the project's Cargo.toml sets them.
+    #
+    # CARGO_ENCODED_RUSTFLAGS outranks RUSTFLAGS in cargo's precedence, so it
+    # has to go or setting RUSTFLAGS here would be silently ignored.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
     bun run tauri build
 }
 
