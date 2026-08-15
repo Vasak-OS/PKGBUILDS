@@ -1,14 +1,17 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-keyring
-pkgver=0.2.1
-pkgrel=2
+pkgver=0.3.0
+pkgrel=1
 pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPL3')
-depends=('dbus' 'pam' 'glibc' 'gcc-libs')
-makedepends=('git' 'cargo' 'rust')
+# webkit2gtk/gtk3 are for the unlock dialog, which is a Tauri application like
+# the rest of the desktop so that it follows the system's colours, radius and
+# font instead of looking like a stray GTK box.
+depends=('dbus' 'pam' 'glibc' 'gcc-libs' 'webkit2gtk-4.1' 'gtk3')
+makedepends=('git' 'cargo' 'rust' 'bun')
 source=("git+${url}.git")
 sha256sums=('SKIP')
 install="vasak-keyring.install"
@@ -38,8 +41,15 @@ build() {
     unset CARGO_ENCODED_RUSTFLAGS
     export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
     export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
-    # Workspace: builds the daemon (vasak-keyring) and the PAM module cdylib.
-    cargo build --release --workspace
+    # The daemon and the PAM module are plain Rust, and they are the half that
+    # has to work even if the graphical one fails to build.
+    cargo build --release -p vasak-keyring -p pam-vasak-keyring
+
+    # The dialog. `tauri build` is what produces the frontend it embeds; a bare
+    # cargo build would compile it against whatever ../dist happened to hold.
+    cd prompt
+    bun install
+    bun run tauri build
 }
 
 package() {
@@ -57,6 +67,12 @@ package() {
     # pam_<name>.so form under the security dir.
     install -Dm755 "target/release/libpam_vasak_keyring.so" \
         "$pkgdir/usr/lib/security/pam_vasak_keyring.so"
+
+    # The dialog the daemon runs when the keyring is locked and the login did
+    # not unlock it. It is spawned per request and exits with the answer, so
+    # nothing of it stays resident.
+    install -Dm755 "target/release/vasak-keyring-prompt" \
+        "$pkgdir/usr/bin/vasak-keyring-prompt"
 
     # D-Bus activation, so a client that asks for org.freedesktop.secrets can
     # bring the daemon up. Without this it only worked because the systemd user
