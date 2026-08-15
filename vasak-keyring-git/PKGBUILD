@@ -2,7 +2,7 @@
 
 pkgname=vasak-keyring
 pkgver=0.3.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -83,17 +83,9 @@ package() {
     install -Dm644 "pam/README.md" \
         "$pkgdir/usr/share/doc/$pkgname/pam/README.md"
 
-    # NOTE: to auto-unlock the keyring at login, the login PAM stack has to load
-    # the module. /etc/pam.d/system-login covers greetd and the consoles; both
-    # lines go AFTER the corresponding "include system-auth":
-    #
-    #   auth       optional   pam_vasak_keyring.so
-    #   session    optional   pam_vasak_keyring.so
-    #
-    # BOTH are required: `auth` captures the password the user just typed
-    # (pam_get_authtok) and `session` is what hands it to the daemon. With only
-    # `session` the module finds nothing stored and the keyring stays locked.
-    # See usr/share/doc/vasak-keyring/pam/README.md.
-    #
-    # This is intentionally NOT applied automatically to avoid breaking login.
+    # The PAM lines that make the keyring unlock itself at login are added by
+    # post_install, not from here: see vasak-keyring.install. It only touches
+    # /etc/pam.d/system-login when the file is exactly the one it expects, checks
+    # the result before writing it, and renames it into place so the file is
+    # never half written. See usr/share/doc/vasak-keyring/pam/README.md.
 }

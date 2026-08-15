@@ -1,21 +1,118 @@
+PAM_FILE=/etc/pam.d/system-login
+PAM_BACKUP=/etc/pam.d/system-login.vasak-bak
+
+# Adds the two lines the keyring needs to unlock itself at login.
+#
+# Editing /etc/pam.d from a package is not done lightly: a broken file there
+# locks everyone out of the machine. What makes it defensible here is that every
+# step is checked and the write is atomic — the new content is built in full,
+# compared against the original, and only then renamed over it, so there is no
+# instant where the file is half written. If anything is not exactly as expected
+# the file is left alone and the instructions are printed instead.
+#
+# The lines are `optional`, so even a failing module cannot keep anyone from
+# logging in. What could is a malformed file, and that is what the checks below
+# are about.
+configure_pam() {
+    # Already configured — by us, by hand, or in the image.
+    if grep -rqs pam_vasak_keyring /etc/pam.d/; then
+        return 0
+    fi
+
+    if [ ! -f "$PAM_FILE" ]; then
+        return 1
+    fi
+
+    # The module has to run after the password has been asked for, which is what
+    # these includes do. Without them there is nothing to anchor to and the file
+    # is not the one this expects.
+    grep -Eq '^[[:space:]]*auth[[:space:]]+include[[:space:]]+system-auth' "$PAM_FILE" || return 1
+    grep -Eq '^[[:space:]]*session[[:space:]]+include[[:space:]]+system-auth' "$PAM_FILE" || return 1
+
+    local tmp
+    tmp=$(mktemp "$PAM_FILE.vasak-XXXXXX") || return 1
+
+    # `auth` goes right after its include: by then the password has been typed.
+    #
+    # `session` goes at the very end, after pam_systemd. That is not cosmetic:
+    # pam_systemd is what creates /run/user/<uid>, and the daemon's bus socket
+    # lives there. Ordered before it, the module has nowhere to deliver the
+    # password to.
+    awk '
+        { print }
+        /^[[:space:]]*auth[[:space:]]+include[[:space:]]+system-auth/ && !done_auth {
+            print "auth       optional   pam_vasak_keyring.so"
+            done_auth = 1
+        }
+        END { print "session    optional   pam_vasak_keyring.so" }
+    ' "$PAM_FILE" > "$tmp" || { rm -f "$tmp"; return 1; }
+
+    # Two lines added, nothing else touched: every original line has to still be
+    # there, in the same order, and the count has to be exactly two higher.
+    local before after
+    before=$(wc -l < "$PAM_FILE")
+    after=$(wc -l < "$tmp")
+
+    if [ "$after" -ne "$((before + 2))" ] ||
+       ! grep -c pam_vasak_keyring "$tmp" | grep -qx 2 ||
+       ! diff <(grep -v pam_vasak_keyring "$tmp") "$PAM_FILE" > /dev/null; then
+        rm -f "$tmp"
+        return 1
+    fi
+
+    cp -a "$PAM_FILE" "$PAM_BACKUP" 2>/dev/null
+    chmod 644 "$tmp"
+    chown root:root "$tmp" 2>/dev/null
+    # Rename, not copy: a partially written /etc/pam.d/system-login is the one
+    # thing that could actually lock somebody out.
+    mv -f "$tmp" "$PAM_FILE" || { rm -f "$tmp"; return 1; }
+
+    echo ">>> vasak-keyring: auto-desbloqueo configurado en $PAM_FILE"
+    echo "    (copia del archivo anterior en $PAM_BACKUP)"
+    return 0
+}
+
+# Takes the two lines back out, so an uninstalled module is not left named in
+# the login stack. Same care as putting them in.
+deconfigure_pam() {
+    [ -f "$PAM_FILE" ] || return 0
+    grep -q pam_vasak_keyring "$PAM_FILE" || return 0
+
+    local tmp
+    tmp=$(mktemp "$PAM_FILE.vasak-XXXXXX") || return 1
+
+    grep -v pam_vasak_keyring "$PAM_FILE" > "$tmp" || { rm -f "$tmp"; return 1; }
+
+    # Never leave an empty or obviously broken file behind.
+    if ! grep -Eq '^[[:space:]]*auth[[:space:]]+include[[:space:]]+system-auth' "$tmp"; then
+        rm -f "$tmp"
+        return 1
+    fi
+
+    chmod 644 "$tmp"
+    chown root:root "$tmp" 2>/dev/null
+    mv -f "$tmp" "$PAM_FILE" || { rm -f "$tmp"; return 1; }
+}
+
 post_install() {
     mkdir -p /etc/systemd/user/default.target.wants
     ln -sf /usr/lib/systemd/user/vasak-keyring.service \
         /etc/systemd/user/default.target.wants/vasak-keyring.service
 
-    if ! grep -rqs pam_vasak_keyring /etc/pam.d/; then
+    if ! configure_pam; then
         cat <<'EOF'
 
 >>> vasak-keyring: falta el auto-desbloqueo por PAM.
 
-    El demonio va a arrancar, pero el llavero queda bloqueado y las
-    aplicaciones no van a poder guardar ni leer contraseñas.
+    No se pudo configurar solo porque /etc/pam.d/system-login no es el que
+    esperábamos, así que no se tocó. El demonio va a arrancar, pero el
+    llavero queda bloqueado y las aplicaciones no van a poder guardar ni
+    leer contraseñas.
 
-    Agregá estas dos líneas a /etc/pam.d/system-login, después de los
-    "include system-auth":
+    Agregá estas dos líneas a mano:
 
-        auth       optional   pam_vasak_keyring.so
-        session    optional   pam_vasak_keyring.so
+        auth       optional   pam_vasak_keyring.so     (después del "auth include system-auth")
+        session    optional   pam_vasak_keyring.so     (al final del archivo, después de pam_systemd)
 
     Hacen falta las dos: `auth` toma la contraseña recién escrita y
     `session` es la que se la entrega al demonio.
@@ -25,9 +122,15 @@ post_install() {
 EOF
     fi
 }
+
 post_upgrade() {
     post_install
 }
+
+pre_remove() {
+    deconfigure_pam
+}
+
 post_remove() {
     rm -f /etc/systemd/user/default.target.wants/vasak-keyring.service
 }
