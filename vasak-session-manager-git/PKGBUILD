@@ -8,7 +8,8 @@ url="https://github.com/Vasak-OS/vasak-session-manager"
 license=('MIT')
 # Runs as a greetd greeter (greetd owns PAM/seat/session), so no pam/systemd
 # service is shipped here. cage hosts the greeter; greetd invokes the launcher.
-depends=('webkit2gtk-4.1' 'gtk3' 'cage' 'greetd')
+# vasakos-wallpapers holds the image the login screen is drawn on.
+depends=('webkit2gtk-4.1' 'gtk3' 'cage' 'greetd' 'vasakos-wallpapers')
 makedepends=('git' 'cargo' 'bun' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
