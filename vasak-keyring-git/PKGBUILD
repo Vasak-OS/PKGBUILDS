@@ -2,7 +2,7 @@
 
 pkgname=vasak-keyring
 pkgver=0.3.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
