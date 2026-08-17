@@ -129,6 +129,13 @@ fi
 
 echo "${RED}No portables (${#FAILED[@]}):${OFF} ${FAILED[*]}" >&2
 echo "${DIM}  Se compilaron para la CPU de esta máquina y se van a caer con «instrucción" >&2
-echo "  ilegal» en equipos más viejos. Para los paquetes Rust, fijá la arquitectura en" >&2
-echo "  build(); para los de C, revisá que CFLAGS no traiga -march=native.${OFF}" >&2
+echo "  ilegal» en equipos más viejos." >&2
+echo >&2
+echo "  Si el PKGBUILD todavía no fija la arquitectura: en los de Rust va" >&2
+echo "  '-C target-cpu=x86-64' en build(); en los de C, que CFLAGS no traiga -march=native." >&2
+echo >&2
+echo "  Si el PKGBUILD ya la fija, lo que sobrevive es el binario viejo: se compiló antes" >&2
+echo "  del arreglo y build-all lo da por actualizado porque el pkgver/pkgrel no cambió." >&2
+echo "  Subí el pkgrel —así pacman también actualiza donde ya esté instalado— o forzá el" >&2
+echo "  paquete por nombre: ./build-all.sh <dir>.${OFF}" >&2
 exit 1
