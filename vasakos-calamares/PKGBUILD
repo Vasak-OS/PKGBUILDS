@@ -1,7 +1,7 @@
 _pkgname="calamares"
 pkgname="vasakos-$_pkgname"
 pkgver=3.4.2
-pkgrel=1
+pkgrel=2
 pkgdesc="Distribution-independent installer framework"
 url="https://codeberg.org/Calamares/calamares"
 license=("GPL-3.0-or-later")
@@ -30,6 +30,31 @@ source=("$_pkgname-$pkgver.$_pkgext"::"$url/archive/v$pkgver.$_pkgext")
 sha256sums=('7b8d0ee09645ad9d625baaebe0ba9ffd5baedbe92153347fd4d0a003a2d7639c')
 
 build() {
+  # Los flags se fijan acá y no se hereda makepkg.conf, por lo mismo que en los
+  # paquetes Rust: la configuración de la máquina que compila no es confiable.
+  # En este equipo CFLAGS/CXXFLAGS están comentados, y la línea comentada que
+  # ofrece CachyOS trae `-march=native -O3`: descomentarla produciría un
+  # instalador que muere con «instrucción ilegal» en cualquier CPU más vieja.
+  #
+  # `-march=x86-64 -mtune=generic` es la línea base de x86-64: corre en todo
+  # procesador de 64 bits. La optimización no entra acá — CMAKE_BUILD_TYPE=Release
+  # ya agrega su propio `-O3 -DNDEBUG` después de estos flags.
+  #
+  # Lo que sí faltaba es el endurecimiento que Arch pone por defecto y que sin
+  # CFLAGS no llega. `-fstack-protector-strong` y `-fcf-protection` ya vienen
+  # activados en el GCC de Arch; _FORTIFY_SOURCE y BIND_NOW no. Importa más que
+  # en otros paquetes: esto corre como root durante la instalación.
+  local _hardening=(
+    -march=x86-64 -mtune=generic
+    -pipe -fno-plt -fexceptions
+    -Wp,-U_FORTIFY_SOURCE -Wp,-D_FORTIFY_SOURCE=3
+    -Wformat -Werror=format-security
+    -fstack-clash-protection -fcf-protection
+  )
+  export CFLAGS="${_hardening[*]}"
+  export CXXFLAGS="${_hardening[*]} -Wp,-D_GLIBCXX_ASSERTIONS"
+  export LDFLAGS="-Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-z,pack-relative-relocs"
+
   local _skip_modules=(
     dracut
     dracutlukscfg
