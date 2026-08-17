@@ -50,6 +50,21 @@ packages get rebuilt.
 Use `--strict-check` for the old behaviour (abort if anything fails the
 pre-flight), or `--no-check` to skip the pre-flight and try everything.
 
+### Checking the packages run everywhere
+
+`check-portability.sh` reads the finished packages and fails if any of them
+carries instructions no pre-2013 CPU has. `build-all.sh` checks the *sources*
+pin the architecture; this is the backstop that catches what that cannot see — a
+C package picking up `-march=native` from `makepkg.conf`, or a vendored binary.
+
+```bash
+./check-portability.sh                     # everything in the repository
+./check-portability.sh vasak-desktop-git   # one package directory
+```
+
+`update-repo.sh` runs it between building and signing, and refuses to sign if
+anything fails.
+
 The full release — build, publish, sign the database — lives one directory
 over:
 
