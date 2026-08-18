@@ -80,6 +80,19 @@ build() {
 }
 
 package() {
+    # The bundle directory is named with the version in tauri.conf.json, not
+    # with this file's pkgver. When the two drift the copy below failed with
+    # `cp: cannot stat`, naming a path instead of the actual problem — and a
+    # build that got that far had already spent twelve minutes compiling.
+    local built
+    built=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        "$srcdir/$pkgname/src-tauri/tauri.conf.json" | head -1)
+    if [ -n "$built" ] && [ "$built" != "$pkgver" ]; then
+        error "pkgver=$pkgver pero la aplicación se construyó como $built."
+        error "Actualizá pkgver en este PKGBUILD para que coincida."
+        return 1
+    fi
+
     cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_*/data/* "${pkgdir}"
 
     # The i18n plugin resolves translations at runtime and only probes paths
