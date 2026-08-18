@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-press-and-hold
-pkgver=0.1.1
-pkgrel=4
+pkgver=0.1.2
+pkgrel=1
 pkgdesc="Press & hold a key to pick accented characters on Wayland, for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
