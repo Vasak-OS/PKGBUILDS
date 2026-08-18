@@ -2,7 +2,7 @@
 
 pkgname=vasak-press-and-hold
 pkgver=0.1.1
-pkgrel=3
+pkgrel=4
 pkgdesc="Press & hold a key to pick accented characters on Wayland, for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
