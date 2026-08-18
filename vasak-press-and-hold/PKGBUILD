@@ -2,7 +2,7 @@
 
 pkgname=vasak-press-and-hold
 pkgver=0.1.1
-pkgrel=1
+pkgrel=2
 pkgdesc="Press & hold a key to pick accented characters on Wayland, for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -69,8 +69,8 @@ package() {
     # with uaccess so the *active session* gets them, instead of adding the user
     # to the input group, which would grant it to every session at once and for
     # good.
-    install -Dm644 "99-$pkgname.rules" \
-        "$pkgdir/usr/lib/udev/rules.d/99-$pkgname.rules"
+    install -Dm644 "60-$pkgname.rules" \
+        "$pkgdir/usr/lib/udev/rules.d/60-$pkgname.rules"
 
     # And uinput has to be loaded for that rule to have a device to act on: the
     # node exists from boot as a static one, with nothing behind it and no
