@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-press-and-hold
-pkgver=0.1.0
-pkgrel=2
+pkgver=0.1.1
+pkgrel=1
 pkgdesc="Press & hold a key to pick accented characters on Wayland, for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -71,6 +71,12 @@ package() {
     # good.
     install -Dm644 "99-$pkgname.rules" \
         "$pkgdir/usr/lib/udev/rules.d/99-$pkgname.rules"
+
+    # And uinput has to be loaded for that rule to have a device to act on: the
+    # node exists from boot as a static one, with nothing behind it and no
+    # uevent, which is why the rule alone left it root-only.
+    install -Dm644 "packaging/$pkgname.modules-load.conf" \
+        "$pkgdir/usr/lib/modules-load.d/$pkgname.conf"
 
     # Nothing started the daemon before: no unit, no autostart entry. The
     # feature was installed and simply never ran, which from the outside looks
