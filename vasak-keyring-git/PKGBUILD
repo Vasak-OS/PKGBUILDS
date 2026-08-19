@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-keyring
-pkgver=0.3.0
-pkgrel=3
+pkgver=0.4.0
+pkgrel=1
 pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -73,6 +73,13 @@ package() {
     # nothing of it stays resident.
     install -Dm755 "target/release/vasak-keyring-prompt" \
         "$pkgdir/usr/bin/vasak-keyring-prompt"
+
+    # El programa que ssh ejecuta cuando necesita la frase de una clave. Sale
+    # del mismo `tauri build` que el diálogo —comparten la interfaz— pero el
+    # empaquetador de Tauri sólo copia el binario principal, así que este va
+    # aparte. Sin él, cada `git push` vuelve a pedir la frase.
+    install -Dm755 "target/release/vasak-ssh-askpass" \
+        "$pkgdir/usr/bin/vasak-ssh-askpass"
 
     # D-Bus activation, so a client that asks for org.freedesktop.secrets can
     # bring the daemon up. Without this it only worked because the systemd user
