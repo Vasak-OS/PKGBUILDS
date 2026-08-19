@@ -13,7 +13,7 @@ makepkg -si
 ### Build all VasakOS packages
 
 `build-all.sh` builds the packages in this repo that are **out of date**
-(Calamares excluded). It asks makepkg which files each PKGBUILD would produce
+It asks makepkg which files each PKGBUILD would produce
 and compares them against the pacman repository staging directory — by default
 `../repository-script/x86_64`. Packages already published there are skipped;
 the rest are built, copied in, and the versions they replace are deleted.

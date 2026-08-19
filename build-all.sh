@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # build-all.sh — build the VasakOS packages that are out of date and publish
-# them into the local pacman repository (except Calamares).
+# them into the local pacman repository.
 #
 # For each package directory that contains a PKGBUILD it asks makepkg which
 # files that PKGBUILD would produce (`makepkg --packagelist`, which resolves
@@ -74,8 +74,13 @@ set -uo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE="$(cd "$REPO_DIR/.." && pwd)"
 
-# Calamares is intentionally excluded.
-EXCLUDE=(vasakos-calamares vasakos-calamares-config)
+# Nada queda afuera por omisión. Calamares se excluía desde el primer día sin
+# que quedara escrito por qué; es el instalador que el ISO pide en
+# packages.x86_64, así que dejarlo afuera significaba armar la imagen con lo
+# que hubiera quedado de una compilación anterior —o con nada—. Se compila
+# desde C++ y tarda bastante más que las aplicaciones, que probablemente sea el
+# motivo original: para saltearlo en una vuelta puntual está --exclude.
+EXCLUDE=()
 INSTALL=0
 STOP=0
 PREFER_GIT=1
