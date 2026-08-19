@@ -85,8 +85,28 @@ build() {
     initramfscfg
     interactiveterminal
     packagechooser
-    packagechooserq
     services-openrc
+  )
+
+  # Las páginas en QML, que son otra versión de las mismas pantallas.
+  #
+  # La secuencia de vasakos-calamares-config usa las clásicas —welcome, locale,
+  # keyboard, partition, users, summary— y ninguna de éstas, así que se
+  # compilaban para no usarse nunca. Y una de ellas no compila: en 3.4.2 usersq
+  # deja sin definir el destructor de su fábrica y el enlazado del paquete
+  # entero se cae en el objeto 538 de 540.
+  #
+  # No es lo mismo que -DWITH_QML=OFF, que apagaría QML por completo: la
+  # presentación de la marca es show.qml y dejaría de funcionar.
+  _skip_modules+=(
+    finishedq
+    keyboardq
+    localeq
+    notesqml
+    packagechooserq
+    summaryq
+    usersq
+    welcomeq
   )
 
   local _cmake_options=(
