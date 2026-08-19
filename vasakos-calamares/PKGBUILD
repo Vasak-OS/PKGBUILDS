@@ -18,6 +18,7 @@ depends=(
 )
 makedepends=(
   'extra-cmake-modules'
+  'git'
   'libglvnd'
   'ninja'
   'qt6-tools'
@@ -25,9 +26,27 @@ makedepends=(
 )
 
 _pkgsrc="$_pkgname"
-_pkgext="tar.gz"
-source=("$_pkgname-$pkgver.$_pkgext"::"$url/archive/v$pkgver.$_pkgext")
-sha256sums=('7b8d0ee09645ad9d625baaebe0ba9ffd5baedbe92153347fd4d0a003a2d7639c')
+# El commit al que apunta el tag v3.4.2.
+#
+# Antes esto bajaba el tarball que Codeberg arma al vuelo, y su sha256 dejó de
+# coincidir: Gitea regenera esos archivos y los bytes cambian —otra compresión,
+# otras fechas en las cabeceras— aunque el contenido sea el mismo. La receta
+# fallaba en la validación sin que hubiera pasado nada raro, y actualizar el
+# hash sólo habría corrido el problema hasta la próxima vez.
+#
+# Un commit, en cambio, es su propio hash: git verifica que lo que bajó es
+# exactamente esto. Para subir de versión:
+#
+#   git ls-remote https://codeberg.org/Calamares/calamares.git 'refs/tags/vX.Y.Z*'
+#
+# El asterisco importa. `refs/tags/vX.Y.Z` devuelve el objeto del tag —una
+# etiqueta anotada es un objeto aparte, con su firma y su mensaje— y el commit
+# es el que aparece con el sufijo ^{}. Poner el primero funciona igual, porque
+# git lo resuelve, pero deja escrito en la receta un hash que no es el del
+# código.
+_commit=36d30c492e5c7b5d6d32fed5c5d9790522e1eea3 # tag v3.4.2
+source=("$_pkgsrc"::"git+$url.git#commit=$_commit")
+sha256sums=('SKIP')
 
 build() {
   # Los flags se fijan acá y no se hereda makepkg.conf, por lo mismo que en los
