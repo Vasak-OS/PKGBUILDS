@@ -31,34 +31,91 @@ DEFAULT_REPO="${VASAKOS_REPO_DIR:-$WORKSPACE/repository-script/x86_64}"
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; CYAN=$'\033[36m'; DIM=$'\033[2m'; OFF=$'\033[0m'
 [[ -t 1 ]] || { RED=""; GREEN=""; YELLOW=""; CYAN=""; DIM=""; OFF=""; }
 
-for tool in bsdtar objdump; do
+for tool in bsdtar objdump gawk; do
   command -v "$tool" >/dev/null || { echo "$tool not found (install libarchive and binutils)." >&2; exit 1; }
 done
 
 # The fingerprint of a compiler told to target x86-64-v3 or above.
 #
-# These are BMI1/BMI2 general-purpose instructions. They matter for two reasons:
-# no CPU before 2013 has them, and — unlike the AVX vector instructions — they
-# are practically never written by hand inside the runtime-dispatched SIMD
-# routines that crates like memchr ship. So finding one means the *compiler* was
-# aimed above the baseline, not that a library carries an optional fast path.
+# These are BMI1/BMI2 general-purpose instructions, and no CPU from before 2013
+# has them. Finding one is not a verdict on its own, though: `ring` ships the
+# CRYPTOGAMS bignum assembly, written by hand and full of `mulx`, and picks the
+# routine to call after reading CPUID. Its instructions are there on every
+# build, on purpose, and never execute on a machine that lacks them.
+#
+# What tells the two apart is *where* the instructions are. Hand-written
+# assembly lives in one block: 375 of them inside 108 KB of ring's own code, in
+# a 7 MB binary. A compiler aimed above the baseline spreads them through
+# everything it compiled. So the distribution is what decides, and finding the
+# CPUID check that guards them is the corroboration.
 #
 # `tzcnt` is deliberately absent. It assembles to `f3 0f bc`, which a CPU without
 # BMI1 executes as `rep bsf` — the same result — so LLVM emits it even for the
 # baseline. Flagging it would fail every package for no reason.
-FINGERPRINT='\b(lzcnt|shlx|shrx|sarx|andn|bzhi|mulx|pdep|pext|blsi|blsr|blsmsk)\b'
+BMI='lzcnt|shlx|shrx|sarx|andn|bzhi|mulx|pdep|pext|blsi|blsr|blsmsk'
+FINGERPRINT="\\b($BMI)\\b"
+
+# El mismo patrón para gawk, que no es el mismo idioma: el borde de palabra ahí
+# es \y, y \b dentro de una variable significa «retroceso», así que la
+# búsqueda no encontraba nada y todo parecía portable. Las barras van dobles
+# porque -v procesa los escapes una vez antes de que la expresión se compile.
+GAWK_FINGERPRINT="\\\\y($BMI)\\\\y"
 
 # Reported separately: these do appear in hand-written, cpuid-guarded code, so on
 # their own they are not a verdict — only a hint worth printing when something
 # else already failed.
 VECTOR='\b(vpbroadcast[a-z]+|vperm[a-z0-9]+|vfmadd[0-9]+[a-z]+|vpsravd|vgather[a-z]+)\b'
 
+# How much of the binary the suspicious instructions are spread across, plus
+# whether anything in it reads CPUID. Answered in one pass: these binaries are
+# big and disassembling them twice was already the slow part of this script.
+#
+# Prints: <instrucciones> <bloques de 64 KB> <ancho en bytes> <cpuid>
+measure_file() {
+  objdump -d --no-show-raw-insn "$1" 2>/dev/null | gawk -v fp="$GAWK_FINGERPRINT" '
+    $0 ~ fp {
+      addr = $1; sub(":", "", addr)
+      d = strtonum("0x" addr)
+      if (d == 0) next
+      hits++
+      block[int(d / 65536)] = 1
+      if (min == 0 || d < min) min = d
+      if (d > max) max = d
+    }
+    /\ycpuid\y/ {
+      addr = $1; sub(":", "", addr)
+      c = strtonum("0x" addr)
+      if (c > 0) cpuid[++cpuids] = c
+    }
+    END {
+      # Lo que importa del cpuid no es que exista, sino que esté pegado al
+      # bloque: es el control que decide si esas instrucciones se ejecutan.
+      distancia = -1
+      for (i = 1; i <= cpuids; i++)
+        if (cpuid[i] < min && (distancia == -1 || min - cpuid[i] < distancia))
+          distancia = min - cpuid[i]
+      printf "%d %d %d %d\n", hits + 0, length(block), (max - min) + 0, distancia
+    }
+  '
+}
+
+# Instructions packed into one stretch of code with a CPUID check right in front
+# of them are somebody's hand-written fast path, not a compiler aimed at this
+# machine.
+#
+# Las dos condiciones van juntas a propósito. Que haya un cpuid en algún lado no
+# dice nada —un binario compilado nativo que además use `ring` lo tendría—, pero
+# si *todas* las instrucciones caben en un tramo corto que empieza justo después
+# de un cpuid, no quedó ninguna suelta en el código que compiló el compilador.
+# ring, que es la razón de todo esto, mide 108 KB y tiene su control 2 KB antes.
+ANCHO_MAX=$((256 * 1024))
+CONTROL_MAX=$((128 * 1024))
+
 scan_package() {
   local pkg="$1" name work bad=0
   name="${pkg##*/}"
 
   work="$(mktemp -d)"
-  # Extract only what can contain machine code.
   if ! bsdtar -xf "$pkg" -C "$work" 2>/dev/null; then
     echo "  ${RED}$name: no se pudo leer el paquete${OFF}" >&2
     rm -rf "$work"
@@ -72,10 +129,19 @@ scan_package() {
     # that ELF's fourth byte is not, but the ones after it are.
     [[ "$(od -An -tx1 -N4 "$file" 2>/dev/null | tr -d ' \n')" == "7f454c46" ]] || continue
 
-    local hits
-    hits="$(objdump -d --no-show-raw-insn "$file" 2>/dev/null |
-      grep -coE "$FINGERPRINT" || true)"
-    [[ "$hits" -gt 0 ]] || continue
+    local hits bloques ancho control
+    read -r hits bloques ancho control < <(measure_file "$file")
+    [[ "${hits:-0}" -gt 0 ]] || continue
+
+    local corto="${file#"$work"/}"
+
+    if [[ "$ancho" -le $ANCHO_MAX && "$control" -ge 0 && "$control" -le $CONTROL_MAX ]]; then
+      # Worth printing: it is the difference between "revisado y está bien" and
+      # "no se miró", and if the guess is ever wrong this line is what shows it.
+      printf '  %s%-52s%s %s instrucción(es) BMI en %s KB, con el control de CPU %s KB antes: ensamblador propio, no el compilador\n' \
+        "$DIM" "$corto" "$OFF" "$hits" "$((ancho / 1024))" "$((control / 1024))"
+      continue
+    fi
 
     if [[ $reported -eq 0 ]]; then
       echo "  ${RED}$name${OFF}"
@@ -84,8 +150,8 @@ scan_package() {
     fi
     local vec
     vec="$(objdump -d --no-show-raw-insn "$file" 2>/dev/null | grep -coE "$VECTOR" || true)"
-    printf '      %-52s %s instrucción(es) BMI, %s vectoriales\n' \
-      "${file#"$work"/}" "$hits" "$vec"
+    printf '      %-52s %s instrucción(es) BMI en %s bloques de 64 KB, %s vectoriales\n' \
+      "$corto" "$hits" "$bloques" "$vec"
   done < <(find "$work" -type f -print0 2>/dev/null)
 
   rm -rf "$work"
