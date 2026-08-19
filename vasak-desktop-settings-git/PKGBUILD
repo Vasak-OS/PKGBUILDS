@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.4.1
+pkgver=0.4.3
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -19,11 +19,9 @@ depends=(
     'polkit-vasak-agent'
     'vasakos-icon-theme'
     'swayidle'
-    'gtklock'
-    # vasak-lock themes the lock screen from ~/.config/vasak/vasak.conf and
-    # blurs the wallpaper with GdkPixbuf before handing both to gtklock.
-    'python'
-    'python-gobject'
+    # Ships /usr/bin/vasak-lock-screen, which both the idle unit and the
+    # Super+L binding in wayfire.ini call: without it there is no screen lock.
+    'vasak-session-manager'
     # File pickers and screen sharing. The wlroots backend is the one that can
     # capture a Wayfire output.
     'xdg-desktop-portal'
@@ -46,6 +44,5 @@ package() {
         "$pkgdir/etc/pinentry/preexec"
     cp -r $srcdir/$pkgname/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
-    chmod a+x $pkgdir/usr/bin/vasak-lock
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
 }
