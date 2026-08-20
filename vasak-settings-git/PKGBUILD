@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.2.6
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
@@ -18,6 +18,10 @@ depends=(
     'pango'
     'webkit2gtk-4.1'
     'dbus'
+    # Al elegir un video de fondo se lo prepara una vez: se baja a la
+    # resolución de la pantalla, se limita a 30 fps y se le saca el audio.
+    # Sin ffmpeg eso no se puede hacer y el video se usa tal como está.
+    'ffmpeg'
 )
 makedepends=(
     'git'
