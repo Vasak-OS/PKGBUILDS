@@ -14,6 +14,13 @@ _enable() {
     udevadm control --reload-rules 2>/dev/null || true
     udevadm trigger --subsystem-match=usb 2>/dev/null || true
     systemctl daemon-reload 2>/dev/null || true
+
+    # modules-load.d only runs at boot, so without this the webcam would not
+    # work until the next reboot — on a fresh install, that is the whole first
+    # session. Failure is not fatal and not worth a warning: the usual cause is
+    # a kernel update in the same transaction, where the running kernel no
+    # longer has matching modules and a reboot is coming anyway.
+    modprobe v4l2loopback 2>/dev/null || true
 }
 
 post_install() {
@@ -25,6 +32,12 @@ post_install() {
    La primera vez el teléfono pregunta si permite la depuración: hay que
    aceptarlo ahí. Para revocarlo después, «Revocar autorizaciones de
    depuración USB» en las opciones de desarrollador del teléfono.
+
+:: La cámara del teléfono se puede usar como webcam. Aparece como «VasakOS
+   Phone» en las aplicaciones de videollamada, y sólo mientras esté en uso.
+
+   Si acabás de actualizar el kernel, la webcam no va a funcionar hasta que
+   reinicies: el módulo del kernel que corre ahora no es el que se instaló.
 EOF
 }
 

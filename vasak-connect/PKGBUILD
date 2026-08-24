@@ -13,6 +13,17 @@ depends=(
     'android-tools'
     'scrcpy'
     'dbus'
+    # The webcam bridge writes camera frames into a v4l2loopback device, so the
+    # module has to exist for the feature to work at all.
+    #
+    # This is the *virtual* provider on purpose, not 'v4l2loopback-dkms'. Some
+    # kernels — the CachyOS ones this system ships, among others — already build
+    # v4l2loopback in and provide V4L2LOOPBACK-MODULE themselves; naming the
+    # DKMS package directly would drag in dkms and a second copy of a module
+    # those users already have, and would rebuild it on every kernel update for
+    # nothing. On a kernel without it, pacman resolves this to v4l2loopback-dkms
+    # from extra.
+    'V4L2LOOPBACK-MODULE'
 )
 makedepends=(
     'git'
@@ -87,6 +98,19 @@ package() {
     # so it covers every manufacturer in one line.
     install -Dm644 "packaging/70-$pkgname.rules" \
         "$pkgdir/usr/lib/udev/rules.d/70-$pkgname.rules"
+
+    # The loopback device the phone camera is written into. Both files go in
+    # /usr/lib rather than /etc: they are what the package decided, and a person
+    # who wants to override either drops a file of the same name in /etc, which
+    # takes precedence without pacman ever fighting them for it.
+    #
+    # exclusive_caps=1 in the options file is what keeps a permanently loaded
+    # module from showing up as a permanently broken camera in every video call
+    # application.
+    install -Dm644 "packaging/$pkgname-v4l2loopback.conf" \
+        "$pkgdir/usr/lib/modprobe.d/$pkgname.conf"
+    install -Dm644 "packaging/$pkgname-modules.conf" \
+        "$pkgdir/usr/lib/modules-load.d/$pkgname.conf"
 
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
