@@ -90,4 +90,12 @@ package() {
     fi
 
     cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_*/data/* "${pkgdir}"
+
+    # El plugin de idiomas resuelve las traducciones en tiempo de ejecución y sólo
+    # prueba rutas relativas al binario y al directorio de trabajo, así que un
+    # paquete instalado no encuentra ninguna: sin esto, la aplicación muestra las
+    # claves crudas en vez del texto.
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
+    install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
+        "${pkgdir}/usr/share/${pkgname}/locales/"
 }
