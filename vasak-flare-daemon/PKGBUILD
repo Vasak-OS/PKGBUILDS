@@ -48,4 +48,11 @@ package() {
         "$pkgdir/usr/bin/$pkgname"
     install -Dm644 "packaging/$pkgname.service" \
         "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+
+    # El plugin de idiomas resuelve las traducciones en tiempo de ejecución y
+    # sólo prueba rutas relativas al binario y al directorio de trabajo, que
+    # instalado en /usr/bin no existen: sin esto, los carteles de notificación
+    # muestran las claves crudas en vez del texto.
+    install -dm755 "$pkgdir/usr/share/$pkgname/locales"
+    install -Dm644 "src-tauri/locales/"*.yml "$pkgdir/usr/share/$pkgname/locales/"
 }
