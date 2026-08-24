@@ -95,4 +95,11 @@ package() {
     fi
 
     cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_*/data/* "${pkgdir}"
+
+    # The i18n plugin resolves translations at runtime and only probes paths
+    # relative to the binary and the working directory, so an installed build
+    # finds nothing unless the locales are shipped where lib.rs looks for them.
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
+    install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
+        "${pkgdir}/usr/share/${pkgname}/locales/"
 }
