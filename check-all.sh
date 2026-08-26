@@ -11,8 +11,18 @@
 # For each app repo in the workspace this checks:
 #
 #   frontend  `vue-tsc --noEmit`, when the build script gates on it
+#   lint      `biome check` y `cargo clippy -D warnings`
 #   backend   `cargo check`
 #   git       whether HEAD is ahead of its remote
+#
+# El lint entra acá por lo que costó dejarlo en cero: la causa de que fallara
+# siempre no eran los archivos, era `biome.json` —el `$schema` apuntaba a una
+# versión vieja y `recommended` estaba obsoleto—, así que cada corrida terminaba
+# en rojo sin importar el estado del código y **los avisos nuevos no se veían**.
+# Cuando por fin miró de verdad, aparecieron dos `!` que tapaban un crash, un
+# `parseInt` sin base y un crate que no compilaba en el MSRV que declaraba. Un
+# lint que siempre falla es un lint que nadie mira; el gate es para que no vuelva
+# a pasar.
 #
 # That last one matters more than it looks: the PKGBUILDs fetch sources with
 # `git+https://...`, so makepkg builds the *pushed* branch. Commits sitting in
@@ -25,6 +35,7 @@
 # Options:
 #   -a, --app NAME     Check only this app directory (repeatable).
 #   -t, --tests        Also run `cargo test --lib` for each Rust backend.
+#       --no-lint      Skip the lint checks (biome + clippy).
 #       -D, --dir DIR  Check this directory instead of the working copy. This is
 #                      how the sources makepkg fetched are checked — the code
 #                      that will actually be packaged, rather than whatever the
@@ -45,8 +56,9 @@ DIRS=()
 RUN_TESTS=0
 DO_INSTALL=1
 DO_GIT=1
+DO_LINT=1
 
-usage() { sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,48p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -54,6 +66,7 @@ while [[ $# -gt 0 ]]; do
     -D|--dir) DIRS+=("${2:?--dir needs a path}"); shift 2 ;;
     -t|--tests) RUN_TESTS=1; shift ;;
     --no-install) DO_INSTALL=0; shift ;;
+    --no-lint) DO_LINT=0; shift ;;
     --no-git) DO_GIT=0; shift ;;
     -h|--help) usage 0 ;;
     *) echo "Unknown option: $1" >&2; usage 1 ;;
@@ -138,6 +151,24 @@ for app in "${APPS[@]}"; do
     else
       report frontend "${DIM}not gated on vue-tsc${OFF}"
     fi
+
+    # biome. Se mira el propio biome.json además de los archivos: sus errores de
+    # configuración son los que hacían fallar la corrida entera.
+    if [[ $DO_LINT -eq 1 ]] && grep -q '"lint"' "$dir/package.json" && have bun; then
+      if [[ ! -d "$dir/node_modules" ]]; then
+        report lint "${YELLOW}skipped${OFF} ${DIM}(no node_modules)${OFF}"
+      else
+        out="$(cd "$dir" && bunx --bun biome check . 2>&1)"
+        n="$(grep -cE '^[^ ]+\.(ts|vue|js|css|json)[: ]' <<<"$out")"
+        if [[ "$n" -eq 0 ]]; then
+          report lint "${GREEN}ok${OFF}"
+        else
+          report lint "${RED}${n} aviso(s) de biome${OFF}"
+          grep -E '^[^ ]+\.(ts|vue|js|css|json)[: ]' <<<"$out" | sed 's/ .*//' | head -5 | sed 's/^/             /'
+          FAILED+=("$app (biome)")
+        fi
+      fi
+    fi
   fi
 
   # ── backend ────────────────────────────────────────────────────────────────
@@ -147,6 +178,18 @@ for app in "${APPS[@]}"; do
     else
       if (cd "$dir/src-tauri" && cargo check --quiet >/dev/null 2>&1); then
         report backend "${GREEN}ok${OFF}"
+        # `-D warnings` para que un aviso cuente como fallo: en cero cuesta
+        # mantenerlo, y volver a juntar cincuenta cuesta mucho más.
+        if [[ $DO_LINT -eq 1 ]]; then
+          if (cd "$dir/src-tauri" && cargo clippy --workspace --all-targets --quiet -- -D warnings >/dev/null 2>&1); then
+            report clippy "${GREEN}ok${OFF}"
+          else
+            report clippy "${RED}avisos${OFF}"
+            (cd "$dir/src-tauri" && cargo clippy --workspace --all-targets 2>&1 \
+              | grep -E '^(warning|error)' | head -5 | sed 's/^/             /')
+            FAILED+=("$app (clippy)")
+          fi
+        fi
         if [[ $RUN_TESTS -eq 1 ]]; then
           if (cd "$dir/src-tauri" && cargo test --lib --quiet >/dev/null 2>&1); then
             report tests "${GREEN}ok${OFF}"
