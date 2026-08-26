@@ -10,7 +10,7 @@ license=('GPL3')
 # webkit2gtk/gtk3 are for the unlock dialog, which is a Tauri application like
 # the rest of the desktop so that it follows the system's colours, radius and
 # font instead of looking like a stray GTK box.
-depends=('dbus' 'pam' 'glibc' 'gcc-libs' 'webkit2gtk-4.1' 'gtk3' 'cairo' 'gdk-pixbuf2' 'glib2' 'libsoup3')
+depends=('dbus' 'pam' 'glibc' 'gcc-libs' 'webkit2gtk-4.1' 'gtk3' 'cairo' 'gdk-pixbuf2' 'glib2' 'libsoup3' 'xdg-desktop-portal')
 makedepends=('git' 'cargo' 'rust' 'bun')
 source=("git+${url}.git")
 sha256sums=('SKIP')
@@ -84,6 +84,14 @@ package() {
     # D-Bus activation, so a client that asks for org.freedesktop.secrets can
     # bring the daemon up. Without this it only worked because the systemd user
     # unit happens to be enabled.
+    # El backend del portal para el secreto maestro por aplicación. El .portal es
+    # cómo el portal encuentra el backend; sin él no mira acá y los secretos de
+    # las aplicaciones en sandbox terminaban en una cartera de KDE.
+    install -Dm644 "packaging/vasak-keyring.portal" \
+        "$pkgdir/usr/share/xdg-desktop-portal/portals/vasak-keyring.portal"
+    install -Dm644 "packaging/org.freedesktop.impl.portal.desktop.vasak-keyring.service" \
+        "$pkgdir/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.vasak-keyring.service"
+
     install -Dm644 "dbus/org.freedesktop.secrets.service" \
         "$pkgdir/usr/share/dbus-1/services/org.freedesktop.secrets.service"
 
