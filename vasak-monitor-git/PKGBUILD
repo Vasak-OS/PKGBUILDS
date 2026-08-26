@@ -1,0 +1,107 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-monitor
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="System monitor for Vasak OS: resources, applications, services, cleanup and logs."
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPLv3')
+depends=(
+    'cairo'
+    'dbus'
+    'desktop-file-utils'
+    'gdk-pixbuf2'
+    'glib2'
+    'gtk3'
+    'hicolor-icon-theme'
+    'libsoup3'
+    'pango'
+    'webkit2gtk-4.1'
+    # Los servicios se leen y se manejan con systemctl, y el diario con
+    # journalctl: los dos vienen en systemd, que ya está, pero se declara porque
+    # sin ellos dos de las cinco pantallas quedan vacías.
+    'systemd'
+    # `pkexec` pide la contraseña con el agente de polkit para lo del sistema:
+    # la caché de paquetes, el diario, el swap.
+    'polkit'
+    # `du` para medir lo recuperable y `date` para la zona horaria del diario.
+    'coreutils'
+    # `paccache`, que recorta la caché de paquetes conservando la última versión
+    # de cada uno en lugar de borrarla entera.
+    'pacman-contrib'
+)
+makedepends=(
+    'git'
+    'openssl'
+    'appmenu-gtk-module'
+    'libappindicator-gtk3'
+    'librsvg'
+    'cargo'
+    'bun'
+    'rust'
+    'lld'
+)
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+# makepkg inyecta -flto global en CFLAGS/LDFLAGS, y los crates que compilan C o
+# assembly emiten bitcode que el enlazador de rustc no resuelve. Cargo ya hace su
+# propio LTO en el perfil de release, así que el de makepkg es redundante además
+# de dañino.
+options=('!lto')
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    bun install
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    unset CFLAGS
+    unset CXXFLAGS
+    unset CPPFLAGS
+    unset LDFLAGS
+    # Un paquete no se compila para la máquina que le tocó compilarlo.
+    #
+    # makepkg exporta RUSTFLAGS desde makepkg.conf, y acá rust.conf pone
+    # `-C target-cpu=native`: eso compila para el CPU que está construyendo, y el
+    # resultado muere con SIGILL en cualquiera más viejo. `x86-64` es la línea de
+    # base que todas las máquinas de 64 bits implementan.
+    #
+    # CARGO_ENCODED_RUSTFLAGS le gana a RUSTFLAGS en la precedencia de cargo, así
+    # que tiene que irse o poner RUSTFLAGS acá se ignoraría en silencio.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    bun run tauri build
+}
+
+package() {
+    # El directorio del bundle lleva la versión de tauri.conf.json, no la de este
+    # archivo. Cuando las dos se separan, la copia falla con `cp: cannot stat`
+    # nombrando una ruta en lugar del problema — y una compilación que llegó
+    # hasta acá ya gastó varios minutos.
+    local built
+    built=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        "$srcdir/$pkgname/src-tauri/tauri.conf.json" | head -1)
+    if [ -n "$built" ] && [ "$built" != "$pkgver" ]; then
+        error "pkgver=$pkgver pero la aplicación se construyó como $built."
+        error "Actualizá pkgver en este PKGBUILD para que coincida."
+        return 1
+    fi
+
+    cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/*_${pkgver}_*/data/* "${pkgdir}"
+
+    # El plugin de i18n resuelve los catálogos en tiempo de ejecución y sólo prueba
+    # rutas relativas al ejecutable y al directorio de trabajo, así que un paquete
+    # instalado no encuentra nada si no van donde lib.rs los busca.
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
+    install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
+        "${pkgdir}/usr/share/${pkgname}/locales/"
+
+    # El .desktop propio, y no el que genera Tauri: éste lleva el nombre y la
+    # descripción traducidos, y las palabras clave con las que se lo busca.
+    install -Dm644 "$srcdir/$pkgname/packaging/vasak-monitor.desktop" \
+        "${pkgdir}/usr/share/applications/vasak-monitor.desktop"
+}
