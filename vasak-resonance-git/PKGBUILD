@@ -21,6 +21,7 @@ depends=(
     'dbus'
     'sqlite'
     'ffmpeg'
+    'alsa-lib'
 )
 makedepends=(
     'git'

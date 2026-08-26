@@ -16,6 +16,9 @@ depends=(
     'hicolor-icon-theme'
     'libsoup3'
     'pango'
+    'dbus'
+    'gtk-layer-shell'
+    'webkit2gtk-4.1'
 )
 makedepends=(
     'git'

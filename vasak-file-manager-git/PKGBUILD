@@ -27,6 +27,8 @@ depends=(
     'zip'
     'unzip'
     'tar'
+    'dbus'
+    'wayland'
 )
 makedepends=(
     'git'

@@ -10,7 +10,7 @@ license=('GPL3')
 # webkit2gtk/gtk3 are for the unlock dialog, which is a Tauri application like
 # the rest of the desktop so that it follows the system's colours, radius and
 # font instead of looking like a stray GTK box.
-depends=('dbus' 'pam' 'glibc' 'gcc-libs' 'webkit2gtk-4.1' 'gtk3')
+depends=('dbus' 'pam' 'glibc' 'gcc-libs' 'webkit2gtk-4.1' 'gtk3' 'cairo' 'gdk-pixbuf2' 'glib2' 'libsoup3')
 makedepends=('git' 'cargo' 'rust' 'bun')
 source=("git+${url}.git")
 sha256sums=('SKIP')

@@ -24,6 +24,7 @@ depends=(
     # nothing. On a kernel without it, pacman resolves this to v4l2loopback-dkms
     # from extra.
     'V4L2LOOPBACK-MODULE'
+    'systemd-libs'
 )
 makedepends=(
     'git'

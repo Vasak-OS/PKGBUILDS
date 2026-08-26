@@ -11,7 +11,7 @@ license=('MIT')
 # vasakos-wallpapers holds the image the login screen is drawn on.
 # gtk-session-lock: la pantalla de bloqueo crea sus superficies con el
 # protocolo ext-session-lock, y sin esa biblioteca no hay bloqueo posible.
-depends=('webkit2gtk-4.1' 'gtk3' 'cage' 'greetd' 'vasakos-wallpapers' 'gtk-session-lock' 'pam')
+depends=('webkit2gtk-4.1' 'gtk3' 'cage' 'greetd' 'vasakos-wallpapers' 'gtk-session-lock' 'pam' 'cairo' 'dbus' 'gdk-pixbuf2' 'glib2' 'libsoup3')
 makedepends=('git' 'cargo' 'bun' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
