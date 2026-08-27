@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 pkgname=vasak-flare-daemon
 pkgver=0.2.1
-pkgrel=1
+pkgrel=2
 pkgdesc="Persistent freedesktop notification daemon for VasakOS (Tauri + Vue)"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/vasak-flare-daemon"

@@ -2,7 +2,7 @@
 
 pkgname=vasak-accounts
 pkgver=0.2.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2) for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"

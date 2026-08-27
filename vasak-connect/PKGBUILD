@@ -2,7 +2,7 @@
 
 pkgname=vasak-connect
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Use your Android phone's apps as windows on VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"

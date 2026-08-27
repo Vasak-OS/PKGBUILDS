@@ -2,7 +2,7 @@
 
 pkgname=polkit-vasak-agent
 pkgver=0.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Agente de autenticación PolicyKit para VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/polkit-vasak"
