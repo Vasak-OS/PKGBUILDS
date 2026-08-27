@@ -67,6 +67,12 @@ package() {
     install -Dm755 "src-tauri/target/release/vasak-lock-screen" \
         "$pkgdir/usr/bin/vasak-lock-screen"
 
+    # Lleva a una cuenta que ya existe las opciones nuevas del paquete sin pisar lo
+    # que configuró. La llama vasak-session al arrancar la sesión: /etc/skel sólo
+    # alcanza a las cuentas nuevas.
+    install -Dm755 "src-tauri/target/release/vasak-config-migrate" \
+        "$pkgdir/usr/bin/vasak-config-migrate"
+
     # Su propio servicio PAM. Sin este archivo la pantalla se niega a bloquear,
     # que es lo correcto: `login` rechazaría a quien ya tiene la sesión abierta
     # y dejaría la máquina inaccesible.
