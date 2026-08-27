@@ -91,7 +91,7 @@ package() {
         return 1
     fi
 
-    cp -a $srcdir/$pkgname/src-tauri/target/release/bundle/deb/*_${pkgver}_*/data/* "${pkgdir}"
+    cp -a "$srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_"*/data/* "${pkgdir}"
 
     # El plugin de i18n resuelve los catálogos en tiempo de ejecución y sólo prueba
     # rutas relativas al ejecutable y al directorio de trabajo, así que un paquete
@@ -99,9 +99,4 @@ package() {
     install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
     install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
         "${pkgdir}/usr/share/${pkgname}/locales/"
-
-    # El .desktop propio, y no el que genera Tauri: éste lleva el nombre y la
-    # descripción traducidos, y las palabras clave con las que se lo busca.
-    install -Dm644 "$srcdir/$pkgname/packaging/vasak-monitor.desktop" \
-        "${pkgdir}/usr/share/applications/vasak-monitor.desktop"
 }
