@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <pato@vasak.net.ar>
 
 pkgname=polkit-vasak-agent
-pkgver=0.1.0
-pkgrel=4
+pkgver=0.2.0
+pkgrel=1
 pkgdesc="Agente de autenticación PolicyKit para VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/polkit-vasak"
