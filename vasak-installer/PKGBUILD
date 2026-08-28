@@ -1,0 +1,159 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-installer
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Instalador de VasakOS (interfaz Tauri sobre archinstall)"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL-3.0-or-later')
+depends=(
+    # La pila de Tauri, la misma que el resto de las aplicaciones.
+    'cairo'
+    'desktop-file-utils'
+    'gdk-pixbuf2'
+    'glib2'
+    'gtk3'
+    'hicolor-icon-theme'
+    'libsoup3'
+    'pango'
+    'webkit2gtk-4.1'
+
+    # El motor de la instalación. El instalador arma su archivo de configuración
+    # y lo invoca con `--config … --creds … --plugin …`; sin esto no hay
+    # instalación posible, no es opcional.
+    'archinstall'
+    # El plugin de progreso y de post-configuración es Python, y lo carga
+    # archinstall en su propio intérprete. Viene con archinstall, pero se declara
+    # porque el instalador envía un archivo `.py` propio.
+    'python'
+
+    # `pkexec`, que es como la ventana lanza al ayudante privilegiado.
+    'polkit'
+    # `lsblk`, para enumerar los discos.
+    'util-linux'
+    # `openssl passwd -6`, que convierte las contraseñas en hash **antes** de
+    # que se escriba el archivo de credenciales. Sin esto irían en claro.
+    'openssl'
+    # `systemctl` y `systemd-detect-virt`, para reiniciar al terminar y para
+    # avisar cuando se está instalando dentro de una máquina virtual.
+    'systemd'
+    # Le pone nombre a los sistemas operativos que ya están en el disco, para
+    # que el resumen pueda decir «vas a borrar un Windows 11» en vez de «una
+    # partición ntfs». Sin esto la instalación funciona igual, pero el aviso más
+    # importante del instalador pierde su dato más útil.
+    'os-prober'
+)
+makedepends=(
+    'git'
+    'cargo'
+    'rust'
+    'bun'
+    'librsvg'
+)
+source=("git+${url}.git")
+sha256sums=('SKIP')
+install="$pkgname.install"
+
+# makepkg inyecta `-flto` global en CFLAGS/LDFLAGS, y los crates que compilan C o
+# assembly emiten bitcode que el enlazador de rustc no resuelve. Cargo ya hace su
+# propio LTO desde el perfil de release del proyecto.
+options=('!lto')
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    bun install
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    unset CFLAGS
+    unset CXXFLAGS
+    unset CPPFLAGS
+    unset LDFLAGS
+
+    # Un paquete no se compila para la máquina que lo compila. `rust.conf` de
+    # makepkg pone `-C target-cpu=native`, y el binario resultante muere con
+    # SIGILL en cualquier CPU más vieja que la de compilación.
+    #
+    # Acá pesa el doble que en cualquier otra aplicación de VasakOS: **el
+    # instalador es el primer programa que corre en una máquina desconocida**.
+    # Si muere por una instrucción que esa CPU no tiene, no hay sistema
+    # instalado desde el cual diagnosticarlo.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+
+    bun run tauri build
+}
+
+check() {
+    cd "$srcdir/$pkgname"
+    # Los dos lados. El de Rust incluye la planificación de particiones, que es
+    # el código cuyo error borra datos, y la validación de los catálogos de
+    # idioma, que si fallan hacen que la aplicación no abra.
+    bun test
+    cargo test --manifest-path src-tauri/Cargo.toml
+}
+
+package() {
+    local origen="$srcdir/$pkgname"
+
+    # El directorio del bundle lleva la versión de tauri.conf.json, no la de este
+    # archivo. Cuando las dos se separan, el `cp` fallaba con «cannot stat»
+    # nombrando una ruta en vez del problema — después de veinte minutos de
+    # compilación.
+    local built
+    built=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        "$origen/src-tauri/tauri.conf.json" | head -1)
+    if [ -n "$built" ] && [ "$built" != "$pkgver" ]; then
+        error "pkgver=$pkgver pero la aplicación se construyó como $built."
+        error "Actualizá pkgver en este PKGBUILD para que coincida."
+        return 1
+    fi
+
+    cp -a "$origen"/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_*/data/* "${pkgdir}"
+
+    # El ayudante privilegiado. **No lo empaqueta Tauri**: su empaquetador sólo
+    # conoce el binario principal, así que este segundo binario se instala a
+    # mano.
+    #
+    # En `/usr/lib` y no en `/usr/bin` porque no es un programa que alguien deba
+    # ejecutar: es la mitad privilegiada de la aplicación, y la ruta tiene que
+    # coincidir **exactamente** con la anotación `exec.path` de la acción de
+    # polkit de más abajo. Si no coinciden, pkexec cae en la acción genérica y el
+    # diálogo dice «ejecutar un programa como otro usuario» en vez de explicar
+    # que se va a instalar el sistema.
+    install -Dm755 "$origen/src-tauri/target/release/vasak-installer-helper" \
+        "${pkgdir}/usr/lib/${pkgname}/vasak-installer-helper"
+
+    # La acción de polkit. Su valor por defecto **pide autenticación**: la regla
+    # que la releva sin preguntar la envía la ISO, no este paquete, porque sólo
+    # tiene sentido en el medio live —donde el usuario no tiene contraseña que
+    # escribir.
+    install -Dm644 "$origen/src-tauri/packaging/ar.net.vasak.installer.policy" \
+        "${pkgdir}/usr/share/polkit-1/actions/ar.net.vasak.installer.policy"
+
+    install -Dm644 "$origen/src-tauri/packaging/${pkgname}.desktop" \
+        "${pkgdir}/usr/share/applications/${pkgname}.desktop"
+
+    # El plugin de archinstall: de ahí salen el progreso estructurado que mueve
+    # la barra y los ajustes propios de VasakOS sobre el sistema instalado. Sin
+    # este archivo el instalador se niega a arrancar la instalación, y lo dice.
+    install -Dm644 "$origen/src-tauri/plugin/vasakos.py" \
+        "${pkgdir}/usr/share/${pkgname}/plugin/vasakos.py"
+
+    # La lista de paquetes del sistema instalado. Se lee en tiempo de ejecución
+    # justamente para que agregar un paquete al escritorio no obligue a
+    # recompilar el instalador.
+    install -Dm644 "$origen/src-tauri/paquetes.txt" \
+        "${pkgdir}/usr/share/${pkgname}/paquetes.txt"
+
+    # El plugin de i18n resuelve los catálogos en tiempo de ejecución y sólo
+    # prueba rutas relativas al ejecutable y al directorio de trabajo — ninguna
+    # existe para un binario en /usr/bin. Sin esto, la aplicación instalada
+    # muestra las claves crudas en vez de los textos.
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
+    install -Dm644 "$origen/src-tauri/locales/"*.yml \
+        "${pkgdir}/usr/share/${pkgname}/locales/"
+}
