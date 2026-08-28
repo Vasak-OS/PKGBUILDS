@@ -2,7 +2,7 @@
 
 pkgname=polkit-vasak-agent
 pkgver=0.1.0
-pkgrel=3
+pkgrel=4
 pkgdesc="Agente de autenticación PolicyKit para VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/polkit-vasak"
@@ -81,4 +81,12 @@ package() {
     chmod u+s "${pkgdir}/usr/bin/polkit-agent-helper-dbus"
     install -Dm644 "$srcdir/polkit-vasak-agent.service" \
         "${pkgdir}/usr/lib/systemd/user/polkit-vasak-agent.service"
+
+    # El plugin de i18n resuelve los catálogos en tiempo de ejecución y sólo
+    # prueba rutas relativas al ejecutable, así que un paquete instalado no
+    # encuentra nada si no van donde `locales.rs` los busca. Sin esto el diálogo
+    # que pide la contraseña sale con las claves crudas.
+    install -dm755 "${pkgdir}/usr/share/vasak-polkit-agent/locales"
+    install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
+        "${pkgdir}/usr/share/vasak-polkit-agent/locales/"
 }

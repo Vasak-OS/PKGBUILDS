@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 pkgname=vasak-permissions
 pkgver=0.1.0
-pkgrel=3
+pkgrel=4
 pkgdesc="System permission service for VasakOS: camera, microphone, screen and online accounts"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/vasak-permissions"
@@ -76,6 +76,15 @@ package() {
         "$pkgdir/usr/share/xdg-desktop-portal/portals/vasak.portal"
     install -Dm644 "packaging/org.freedesktop.impl.portal.desktop.vasak.service" \
         "$pkgdir/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.vasak.service"
+
+    # El plugin de idiomas resuelve los catálogos en tiempo de ejecución y sólo
+    # prueba rutas relativas al ejecutable, así que un paquete instalado no
+    # encuentra nada si no van donde `locales.rs` los busca. Sin esto, el
+    # diálogo que decide si una aplicación puede usar la cámara sale con las
+    # claves crudas.
+    install -dm755 "$pkgdir/usr/share/vasak-permissions/locales"
+    install -Dm644 "src-tauri/locales/"*.yml \
+        "$pkgdir/usr/share/vasak-permissions/locales/"
 
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
