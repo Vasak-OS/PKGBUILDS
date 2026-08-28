@@ -124,13 +124,36 @@ for app in "${APPS[@]}"; do
   commit="$(cd "$dir" && git rev-parse --short HEAD 2>/dev/null)"
   echo "── $app${commit:+ ${DIM}@ $commit${OFF}}"
 
-  # ── frontend ───────────────────────────────────────────────────────────────
+  # Si hay que correr `bun install` en este directorio.
+#
+# Falta `node_modules`, o el manifiesto o el candado son más nuevos que él —que
+# es como se ve una dependencia agregada después de la última instalación—.
+necesita_instalar() {
+  local dir="$1"
+  [[ ! -d "$dir/node_modules" ]] && return 0
+  local f
+  for f in package.json bun.lock bun.lockb package-lock.json; do
+    [[ -f "$dir/$f" && "$dir/$f" -nt "$dir/node_modules" ]] && return 0
+  done
+  return 1
+}
+
+# ── frontend ───────────────────────────────────────────────────────────────
   if [[ -f "$dir/package.json" ]]; then
     if grep -q 'vue-tsc --noEmit' "$dir/package.json"; then
       if ! have bun; then
         report frontend "${YELLOW}skipped${OFF} ${DIM}(bun not installed)${OFF}"
       else
-        if [[ ! -d "$dir/node_modules" && $DO_INSTALL -eq 1 ]]; then
+        # Se instala también cuando `node_modules` está pero quedó viejo.
+        #
+        # Sólo mirar si existe alcanzaba mientras las dependencias no cambiaran,
+        # pero el árbol de fuentes se refresca en cada corrida y su
+        # `node_modules` no: una aplicación que suma una dependencia fallaba con
+        # «Cannot find module», que parece un error del código y es un
+        # `bun install` que faltó. Pasó con el plugin de idiomas en
+        # vasak-permissions y con el de iconos en vasak-session-manager, y dejó
+        # ocho paquetes sin compilar.
+        if [[ $DO_INSTALL -eq 1 ]] && necesita_instalar "$dir"; then
           report frontend "${DIM}installing dependencies…${OFF}"
           (cd "$dir" && bun install >/dev/null 2>&1)
         fi
