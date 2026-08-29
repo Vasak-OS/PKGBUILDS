@@ -94,6 +94,11 @@ check() {
     # idioma, que si fallan hacen que la aplicación no abra.
     bun test
     cargo test --manifest-path src-tauri/Cargo.toml
+    # El plugin de archinstall hace trabajo de seguridad —quitar del sistema
+    # instalado el sudoers y las reglas de polkit sin contraseña del medio live—
+    # así que sus pruebas también corren. `unittest` es biblioteca estándar: no
+    # suma ninguna dependencia de compilación.
+    ( cd src-tauri/plugin && python3 -m unittest discover )
 }
 
 package() {
@@ -140,6 +145,8 @@ package() {
     # El plugin de archinstall: de ahí salen el progreso estructurado que mueve
     # la barra y los ajustes propios de VasakOS sobre el sistema instalado. Sin
     # este archivo el instalador se niega a arrancar la instalación, y lo dice.
+    # Sólo el plugin, no sus pruebas: `archinstall` carga el directorio y un
+    # `test_*.py` al lado no le aporta nada al sistema instalado.
     install -Dm644 "$origen/src-tauri/plugin/vasakos.py" \
         "${pkgdir}/usr/share/${pkgname}/plugin/vasakos.py"
 
@@ -148,6 +155,14 @@ package() {
     # recompilar el instalador.
     install -Dm644 "$origen/src-tauri/paquetes.txt" \
         "${pkgdir}/usr/share/${pkgname}/paquetes.txt"
+
+    # El catálogo de complementos: navegador, controladores e impresoras. Se lee
+    # en tiempo de ejecución por la misma razón que la lista de paquetes —sumar
+    # un navegador tiene que ser editar un archivo, no recompilar— y el
+    # instalador funciona sin él: si falta, el paso lo dice y se instala el
+    # escritorio sin nada opcional.
+    install -Dm644 "$origen/src-tauri/complementos.toml" \
+        "${pkgdir}/usr/share/${pkgname}/complementos.toml"
 
     # El plugin de i18n resuelve los catálogos en tiempo de ejecución y sólo
     # prueba rutas relativas al ejecutable y al directorio de trabajo — ninguna
