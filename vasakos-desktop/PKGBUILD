@@ -1,0 +1,393 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+# Metapaquete del escritorio de VasakOS: no instala ningún archivo, sólo
+# arrastra por dependencia todo lo que forma el sistema.
+#
+# Existe para que haya **una sola** lista. Antes el conjunto estaba escrito dos
+# veces —`archiso/packages.x86_64`, que es lo que la ISO mete en el medio live,
+# y `vasak-installer/src-tauri/paquetes.txt`, que es lo que el instalador le
+# pasa a archinstall—, en dos repositorios distintos, y se mantenían a mano en
+# sincronía. Divergían: sumar un paquete al escritorio y olvidarse de la
+# segunda lista producía una ISO en la que algo andaba y un sistema instalado
+# en el que no, que es la clase de diferencia que sólo aparece después de
+# instalar. Ahora las dos listas nombran a `vasakos-desktop` y agregan
+# únicamente lo suyo.
+#
+# Lo que **no** va acá, y por qué:
+#
+#   - `linux` y `linux-headers`: el kernel es una elección, no parte del
+#     escritorio. La ISO arranca con el suyo y archinstall instala el del
+#     sistema nuevo por su campo `kernels`; si el metapaquete dependiera de
+#     `linux`, cambiarse a otro kernel obligaría a conservar éste igual de
+#     todos modos. Cada lista lo nombra por su cuenta. (`base` sí está: no es
+#     una elección, y pacstrap lo instala en los dos casos.)
+#   - Lo que sólo tiene sentido en el medio live (`mkinitcpio-archiso`,
+#     `memtest86+`, `syslinux`, `edk2-shell`, `arch-install-scripts`, `pv`,
+#     `vasak-installer`, `archinstall`): queda en `packages.x86_64`.
+#
+# Sumar un paquete al escritorio es editar `depends` acá y subir el `pkgrel`.
+# No hay que tocar ninguna de las dos listas.
+
+pkgname=vasakos-desktop
+pkgver=1
+pkgrel=1
+pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
+arch=('any')
+url="https://github.com/Vasak-OS"
+license=('GPL-3.0-or-later')
+
+# Un metapaquete no tiene fuentes ni nada que compilar: `depends` es todo el
+# contenido. La lista sigue el orden y los comentarios de la vieja
+# `packages.x86_64`, que era donde estaba escrito el porqué de cada elección.
+depends=(
+  # BASE
+
+  ## System
+  iptables-nft
+  base
+  cryptsetup
+  device-mapper
+  diffutils
+  inetutils
+  less
+  linux-firmware
+  linux-firmware-marvell
+  logrotate
+  man-db
+  man-pages
+  mdadm
+  mkinitcpio
+  mkinitcpio-busybox
+  mkinitcpio-nfs-utils
+  perl
+  sudo
+  eza
+  sysfsutils
+  texinfo
+  which
+  vi
+
+  ## SystemD
+  systemd-sysvcompat
+  systemd-resolvconf
+
+  ## Filesystem
+  dosfstools
+  e2fsprogs
+  exfatprogs
+  f2fs-tools
+  gvfs
+  gvfs-afc
+  gvfs-gphoto2
+  gvfs-mtp
+  gvfs-nfs
+  gvfs-smb
+  jfsutils
+  lvm2
+  mtools
+  nfs-utils
+  nilfs-utils
+  ntfs-3g
+  xfsprogs
+  btrfs-progs
+  bcachefs-tools
+  cifs-utils
+  open-iscsi
+  nvme-cli
+
+  ## Boot
+  efibootmgr
+  efitools
+  grub
+  os-prober
+  refind
+
+  # HARDWARE
+
+  ## CPU
+  amd-ucode
+  intel-ucode
+
+  ## X system
+  mesa
+  mesa-utils
+  libva-mesa-driver
+  intel-media-driver
+  xf86-input-libinput
+  xf86-input-evdev
+  xf86-video-amdgpu
+  xf86-video-ati
+  xf86-video-intel
+  xf86-video-qxl
+  xf86-video-vesa
+  xf86-video-fbdev
+  xf86-video-nouveau
+  xorg-server
+  xorg-xwayland
+  xorg-xdpyinfo
+  xorg-xinit
+  xorg-xinput
+  xorg-xkill
+  xorg-xrandr
+  xorg-xwininfo
+  wayland
+  wayland-protocols
+  wayland-utils
+  egl-wayland
+  libva
+  libva-utils
+  vulkan-virtio
+  virglrenderer
+  libglvnd
+
+  ## General
+  openssh
+  lsscsi
+  sg3_utils
+  smartmontools
+  usbutils
+  usbmuxd
+  libfido2
+  libusb-compat
+  fatresize
+  partclone
+  parted
+  squashfs-tools
+  tpm2-tss
+  udftools
+
+  ## Audio
+  wireplumber
+  pipewire
+  pipewire-alsa
+  pipewire-pulse
+  pipewire-jack
+  pipewire-v4l2
+  xdg-desktop-portal
+  xdg-desktop-portal-gtk
+  xdg-desktop-portal-wlr
+  libportal
+  libportal-gtk3
+  sof-firmware
+  alsa-firmware
+
+  # SOFTWARE
+
+  ## General
+  dmraid
+  expect
+  fakeroot
+  freetype2
+  git
+  gpart
+  gpm
+  gptfdisk
+  haveged
+  hwdetect
+  hwinfo
+  libgsf
+  libopenraw
+  mlocate
+  ntp
+  pacman-contrib
+  pkgfile
+  poppler-glib
+  power-profiles-daemon
+  rebuild-detector
+  reflector
+  unrar
+  unzip
+  p7zip
+  wget
+  xdg-user-dirs-gtk
+  xdg-utils
+  xz
+
+  ## Network
+  bind
+  bind-tools
+  dnsmasq
+  ethtool
+  modemmanager
+  nbd
+  ndisc6
+  networkmanager
+  networkmanager-openvpn
+  nss-mdns
+  openconnect
+  openvpn
+  ppp
+  usb_modeswitch
+  vpnc
+  wireless-regdb
+  wpa_supplicant
+  b43-fwcutter
+  broadcom-wl-dkms
+  avahi
+  openresolv
+
+  # Bluetooth
+  bluez
+  bluez-utils
+
+  ## Laptop Support
+  acpi
+  acpica
+  acpid
+
+  # HERRAMIENTAS
+
+  ## Disco y diagnóstico
+  gparted
+  grsync
+  hdparm
+  fsarchiver
+  glances
+  python-defusedxml
+  python-packaging
+  python-pygments
+  bash-completion
+  tldr
+  duf
+
+  # DESKTOP
+
+  ## Display manager
+  accountsservice
+  # greetd is the display-manager; it runs the vasak-session-manager greeter (in
+  # cage) and owns PAM/seat/session hand-off.
+  greetd
+  vasak-session-manager
+
+  ## Dependencies
+  gtk3
+  gtk-layer-shell
+  libwnck3
+  libxkbcommon-x11
+  libxcb
+  xcb-util-cursor
+  webkit2gtk-4.1
+
+  ## Windows Manager
+  wayfire
+  uwsm
+  # Kiosk compositor that hosts the vasak-session-manager greeter.
+  cage
+
+  ## Session lock & tools
+  # Idle daemon and backlight control. The locker itself is vasak-lock-screen,
+  # which ships with vasak-session-manager: the same screen as the login one.
+  swayidle
+  brightnessctl
+  wlsunset
+  wlopm
+
+  ## Desktop environment
+  vasak-desktop
+  vasak-desktop-settings
+  vasakos-icon-theme
+  vasakos-wallpapers
+  vasak-settings
+
+  ## Session daemons (systemd user services; replace polkit-gnome)
+  polkit-vasak-agent
+  vasak-keyring
+  # Decides which applications may use the online accounts; vasak-accounts
+  # refuses every request without it.
+  vasak-permissions
+  vasak-accounts
+  # Mantener una tecla apretada abre el selector de acentos.
+  vasak-press-and-hold
+
+  # Abre las aplicaciones del celular Android como ventanas del escritorio. Trae
+  # adb y scrcpy como dependencias, que es lo que habla con el teléfono y lo que
+  # dibuja cada aplicación en su propia pantalla virtual.
+  vasak-connect
+
+  # Diálogo de frase de paso de GPG. Viene como dependencia de gnupg, pero se
+  # declara acá porque el escritorio depende de que exista un backend gráfico.
+  pinentry
+  vasak-flare-daemon
+
+  vasak-terminal
+  vasak-file-manager
+  vasak-gallery
+  vasak-resonance
+  # Screenshots (bound to PrtSc in the default wayfire.ini) and the system monitor,
+  # which is also where the journal of the desktop is read from.
+  vasak-shot
+  vasak-monitor
+
+  ## Repositories
+  vasakos-mirrorlist
+  vasakos-keyring
+  archlinux-keyring
+
+  ## Tools
+  galculator
+
+  ## Editor
+  nano
+  nano-syntax-highlighting
+  gedit
+
+  ## Mutimedia
+  vlc
+  imagemagick
+  ffmpeg
+
+  ## Codecs
+  ### Audio
+  a52dec
+  libdca
+  libmad
+  libmpcdec
+  opencore-amr
+  ### Image
+  libheif
+  libavif
+  libwebp
+  jasper
+  ### Video
+  dav1d
+  svt-av1
+  libde265
+  libdv
+  libmpeg2
+  libtheora
+  xvidcore
+
+  ## Browser
+  firefox
+
+  ## System
+  fastfetch
+
+  ## Fonts
+  cantarell-fonts
+  noto-fonts
+  noto-fonts-emoji
+  noto-fonts-extra
+  gnu-free-fonts
+  ttf-bitstream-vera
+  ttf-dejavu
+  ttf-liberation
+  ttf-opensans
+  terminus-font
+
+  ## Shells
+  zsh
+
+  # VM SUPPORT
+
+  spice-vdagent
+  virtualbox-guest-utils
+  open-vm-tools
+  xf86-input-vmmouse
+)
+
+# Sin `package()` makepkg no arma nada. El paquete queda vacío a propósito: todo
+# su efecto está en `depends`.
+package() {
+  :
+}
