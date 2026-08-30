@@ -229,8 +229,20 @@ fi
 UNPINNED=()
 for name in "${TARGETS[@]}"; do
   pkgbuild="$REPO_DIR/$name/PKGBUILD"
-  grep -qE '\bcargo\b|\brust\b|tauri' "$pkgbuild" || continue
-  grep -q 'target-cpu=x86-64' "$pkgbuild" || UNPINNED+=("$name")
+  # Los comentarios se sacan antes de buscar. `vasakos-desktop` no compila nada
+  # —es un metapaquete `arch=('any')`, 380 lineas de `depends` y un `package()`—
+  # y aun asi salia en esta lista: un comentario suyo nombra la ruta
+  # `vasak-installer/src-tauri/paquetes.txt`, y `src-tauri` alcanzaba para que
+  # el patron diera positivo. Avisar de un paquete que no tiene una sola linea
+  # de Rust es peor que no avisar: esta advertencia existe porque nueve
+  # paquetes se publicaron sin fijar la arquitectura, y una que se equivoca es
+  # una que se aprende a ignorar.
+  #
+  # El `#` se corta solo si abre linea o viene despues de un espacio, para no
+  # partir un `source=(git+https://...#branch=main)`, que no es un comentario.
+  codigo=$(sed -E 's/(^|[[:space:]])#.*//' "$pkgbuild")
+  grep -qE '\bcargo\b|\brust\b|tauri' <<<"$codigo" || continue
+  grep -q 'target-cpu=x86-64' <<<"$codigo" || UNPINNED+=("$name")
 done
 
 if [[ ${#UNPINNED[@]} -gt 0 ]]; then
