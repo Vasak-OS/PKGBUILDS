@@ -30,7 +30,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=1
+pkgrel=2
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -380,6 +380,30 @@ depends=(
   ttf-liberation
   ttf-opensans
   terminus-font
+
+  # Las que **nombra la configuración por defecto** y no instalaba nadie.
+  #
+  # `vasak-desktop-settings` envía en `/etc/skel` un `vasak.conf` que pide
+  # «MesloLGL Nerd Font Mono» para la terminal y «FantasqueSansM Nerd Font
+  # Propo» para los títulos y las aplicaciones, y un `gschema.override` que pide
+  # «Roboto» y «Source Code Pro». Ninguna de las cuatro estaba en ninguna receta.
+  #
+  # Una `font-family` que no está instalada **no falla**: fontconfig elige la que
+  # se le parezca y sigue. El resultado es un escritorio que no se ve como fue
+  # diseñado, en cada instalación nueva, sin que nada lo diga. En esta máquina de
+  # desarrollo dos de ellas estaban puestas a mano, que es lo que lo escondía.
+  ttf-meslo-nerd
+  ttf-fantasque-nerd
+  ttf-roboto
+  adobe-source-code-pro-fonts
+
+  # Chino, japonés y coreano. `noto-fonts` cubre casi todos los sistemas de
+  # escritura del mundo —del árabe al devanagari— pero **no** los CJK, que van en
+  # su propio paquete por tamaño. Sin él, cualquier texto en esos idiomas se ve
+  # como cuadraditos vacíos: el título de un video, el nombre de una persona en
+  # un repositorio. Es de las cosas que hacen que un sistema parezca sin
+  # terminar, y le pasa a cualquiera, no sólo a quien lee esos idiomas.
+  noto-fonts-cjk
 
   ## Shells
   zsh
