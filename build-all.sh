@@ -74,12 +74,11 @@ set -uo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE="$(cd "$REPO_DIR/.." && pwd)"
 
-# Nada queda afuera por omisión. Calamares se excluía desde el primer día sin
-# que quedara escrito por qué; es el instalador que el ISO pide en
-# packages.x86_64, así que dejarlo afuera significaba armar la imagen con lo
-# que hubiera quedado de una compilación anterior —o con nada—. Se compila
-# desde C++ y tarda bastante más que las aplicaciones, que probablemente sea el
-# motivo original: para saltearlo en una vuelta puntual está --exclude.
+# Nada queda afuera por omisión: lo que el ISO pide en packages.x86_64 se
+# compila. Dejar algo afuera de forma permanente significa armar la imagen con
+# lo que hubiera quedado de una compilación anterior —o con nada—, y eso no se
+# nota hasta que la imagen ya está hecha. Para saltear algo en una vuelta
+# puntual está --exclude, que dura lo que dura el comando.
 EXCLUDE=()
 INSTALL=0
 STOP=0
