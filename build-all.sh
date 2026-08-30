@@ -49,6 +49,11 @@
 #       --no-clean        Keep older versions in the repository.
 #   -d, --nodeps          Don't check or install dependencies (makepkg -d).
 #                         Lets you verify everything compiles without root.
+#       --keep-work       Don't delete src/, pkg/ and the git clone after a
+#                         successful build. They are removed by default: among
+#                         the 20 recipes they reached 8.4 GB, and the next
+#                         build re-clones from the remote anyway. A failed
+#                         build always keeps them.
 #       --refresh-vcs     Run `makepkg -o` on PKGBUILDs that carry a pkgver()
 #                         function, so their version reflects upstream HEAD
 #                         before the up-to-date check. Costs a source fetch.
@@ -86,6 +91,7 @@ PREFER_GIT=1
 CHECK=1
 STRICT_CHECK=0
 NODEPS=0
+KEEP_WORK=0
 FORCE_ALL=0
 DRY_RUN=0
 ADOPT=0
@@ -113,6 +119,7 @@ while [[ $# -gt 0 ]]; do
     --no-prefer-git) PREFER_GIT=0; shift ;;
     --no-clean) CLEAN_OLD=0; shift ;;
     --refresh-vcs) REFRESH_VCS=1; shift ;;
+    --keep-work) KEEP_WORK=1; shift ;;
     --no-check) CHECK=0; shift ;;
     --strict-check) STRICT_CHECK=1; shift ;;
     -d|--nodeps) NODEPS=1; shift ;;
@@ -527,15 +534,48 @@ else
 fi
 [[ $INSTALL -eq 1 ]] && MK_ARGS+=(-i)
 
+# Lo que makepkg deja en el directorio del paquete, una vez que ya no sirve.
+#
+# Un directorio de PKGBUILD debería tener sólo archivos planos: PKGBUILD,
+# .install, .service, parches. Todo lo demás lo produce makepkg: el árbol de
+# compilación (src/, pkg/), el clon bare del repositorio de origen, y el
+# paquete terminado. Entre las 20 recetas eso llegó a ocupar 8,4 GB, y los
+# `target/` de Cargo que quedan adentro de src/ son la mayor parte.
+#
+# Se borra **sólo si la compilación salió bien**. Cuando falla, src/ es
+# exactamente lo que hace falta para entender por qué, así que ahí se deja.
+#
+# El clon bare se va con el resto a propósito: la próxima compilación clona de
+# nuevo desde el remoto, que es la única forma de tener la certeza de que se
+# está compilando lo que está publicado y no lo que quedó cacheado.
+limpiar_trabajo() {
+  local name="$1" publicado="$2"
+  local dir="$REPO_DIR/$name"
+
+  # Cualquier subdirectorio: src/, pkg/ y el clon, que se llama como la fuente
+  # y por eso no se puede nombrar de antemano.
+  find "$dir" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} + 2>/dev/null || true
+
+  # El paquete sólo se borra si ya está guardado en otro lado. Sin repositorio
+  # ni --output, el único ejemplar es éste y borrarlo sería tirar la
+  # compilación.
+  if [[ $publicado -eq 1 ]]; then
+    rm -f "$dir"/*.pkg.tar.* 2>/dev/null || true
+  fi
+}
+
 for name in "${BUILD[@]+"${BUILD[@]}"}"; do
   echo "──────────────────────────────────────────────────────────────"
   echo "${CYAN}==> $name${OFF}"
   if ( cd "$REPO_DIR/$name" && makepkg "${MK_ARGS[@]}" ); then
     OK+=("$name")
-    [[ $USE_PACREPO -eq 1 ]] && publish "$name"
+    _publicado=0
+    [[ $USE_PACREPO -eq 1 ]] && { publish "$name"; _publicado=1; }
     if [[ -n "$OUTPUT" ]]; then
       cp -f "$REPO_DIR/$name"/*.pkg.tar.* "$OUTPUT"/ 2>/dev/null || true
+      _publicado=1
     fi
+    [[ $KEEP_WORK -eq 0 ]] && limpiar_trabajo "$name" "$_publicado"
   else
     FAIL+=("$name")
     echo "!! build failed: $name" >&2
