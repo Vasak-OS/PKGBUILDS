@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-accounts
-pkgver=0.2.0
-pkgrel=3
+pkgver=0.2.1
+pkgrel=1
 pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2) for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"

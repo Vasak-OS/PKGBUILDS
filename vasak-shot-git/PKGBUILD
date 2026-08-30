@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-shot
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="Screenshot tool for Vasak OS: captures first, shows the selector after."
 arch=('x86_64')
