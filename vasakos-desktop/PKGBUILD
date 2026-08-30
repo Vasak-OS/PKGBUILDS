@@ -51,7 +51,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=3
+pkgrel=4
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -64,7 +64,7 @@ depends=(
   # BASE
 
   ## System
-  iptables-nft
+  iptables
   base
   cryptsetup
   device-mapper
@@ -72,21 +72,15 @@ depends=(
   inetutils
   less
   linux-firmware
-  linux-firmware-marvell
   logrotate
   man-db
   man-pages
   mdadm
   mkinitcpio
   mkinitcpio-busybox
-  mkinitcpio-nfs-utils
   perl
   sudo
-  eza
-  sysfsutils
-  texinfo
   which
-  vi
 
   ## SystemD
   systemd-sysvcompat
@@ -103,11 +97,9 @@ depends=(
   gvfs-mtp
   gvfs-nfs
   gvfs-smb
-  jfsutils
   lvm2
   mtools
   nfs-utils
-  nilfs-utils
   ntfs-3g
   xfsprogs
   btrfs-progs
@@ -129,33 +121,21 @@ depends=(
   # que todavía hablan X, y los `xorg-x*` que siguen son clientes, no servidor.
   mesa
   mesa-utils
-  libva-mesa-driver
   intel-media-driver
   xorg-xwayland
-  xorg-xdpyinfo
-  xorg-xinput
-  xorg-xkill
-  xorg-xrandr
-  xorg-xwininfo
   wayland
   wayland-protocols
   wayland-utils
   egl-wayland
   libva
-  libva-utils
-  vulkan-virtio
   virglrenderer
   libglvnd
 
   ## General
   openssh
-  lsscsi
-  sg3_utils
   smartmontools
   usbutils
-  usbmuxd
   libfido2
-  libusb-compat
   tpm2-tss
 
   ## Audio
@@ -168,6 +148,10 @@ depends=(
   xdg-desktop-portal
   xdg-desktop-portal-gtk
   xdg-desktop-portal-wlr
+  # Compartir pantalla y cámara desde el navegador pasa por los portales y el
+  # stream lo consume GStreamer. Sin este plugin el diálogo aparece, el usuario
+  # elige la ventana, y del otro lado no se ve nada.
+  gst-plugin-pipewire
   libportal
   libportal-gtk3
   sof-firmware
@@ -176,18 +160,12 @@ depends=(
   # SOFTWARE
 
   ## General
-  expect
   fakeroot
   freetype2
   git
-  gpm
-  haveged
-  hwdetect
-  hwinfo
   libgsf
   libopenraw
-  mlocate
-  ntp
+  plocate
   pacman-contrib
   pkgfile
   poppler-glib
@@ -196,7 +174,7 @@ depends=(
   reflector
   unrar
   unzip
-  p7zip
+  7zip
   wget
   xdg-user-dirs-gtk
   xdg-utils
@@ -204,7 +182,6 @@ depends=(
 
   ## Network
   bind
-  bind-tools
   dnsmasq
   ethtool
   modemmanager
@@ -212,11 +189,10 @@ depends=(
   networkmanager
   networkmanager-openvpn
   nss-mdns
-  openconnect
-  openvpn
+  networkmanager-openconnect
   ppp
   usb_modeswitch
-  vpnc
+  networkmanager-vpnc
   wireless-regdb
   wpa_supplicant
   avahi
@@ -227,18 +203,11 @@ depends=(
   bluez-utils
 
   ## Laptop Support
-  acpi
-  acpica
-  acpid
 
   # HERRAMIENTAS
 
   ## Disco y diagnóstico
   hdparm
-  glances
-  python-defusedxml
-  python-packaging
-  python-pygments
   bash-completion
   tldr
   duf
@@ -251,15 +220,6 @@ depends=(
   # cage) and owns PAM/seat/session hand-off.
   greetd
   vasak-session-manager
-
-  ## Dependencies
-  gtk3
-  gtk-layer-shell
-  libwnck3
-  libxkbcommon-x11
-  libxcb
-  xcb-util-cursor
-  webkit2gtk-4.1
 
   ## Windows Manager
   wayfire
@@ -359,12 +319,10 @@ depends=(
   noto-fonts
   noto-fonts-emoji
   noto-fonts-extra
-  gnu-free-fonts
   ttf-bitstream-vera
   ttf-dejavu
   ttf-liberation
   ttf-opensans
-  terminus-font
 
   # Las que **nombra la configuración por defecto** y no instalaba nadie.
   #
