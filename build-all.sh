@@ -255,6 +255,50 @@ if [[ ${#UNPINNED[@]} -gt 0 ]]; then
   echo >&2
 fi
 
+# ── Las tres listas no se pisan ───────────────────────────────────────────────
+#
+# VasakOS reparte los paquetes en tres lugares, y el criterio es qué papel
+# cumple cada uno: `vasakos-desktop` lleva lo que el escritorio necesita para
+# funcionar, `archiso/packages.x86_64` lo que hace falta para armar o arrancar
+# la ISO, y `complementos.toml` del instalador lo que el usuario elige.
+#
+# Un paquete en el metapaquete *y* entre los complementos rompe la tercera: la
+# casilla se dibuja, el usuario la desmarca, y el paquete se instala igual
+# porque entra por dependencia. Pasó con `firefox` y con `broadcom-wl-dkms`,
+# que estaban en los dos lados: quien pedía Brave —o «sin navegador»— se
+# llevaba Firefox de todos modos, y la pantalla de complementos era decorado.
+#
+# No falla el build: es un aviso, y sólo corre si el repositorio del instalador
+# está al lado.
+COMPLEMENTOS="$WORKSPACE/vasak-installer/src-tauri/complementos.toml"
+META="$REPO_DIR/vasakos-desktop/PKGBUILD"
+if [[ -f "$COMPLEMENTOS" && -f "$META" ]]; then
+  # Del PKGBUILD: las líneas de `depends`, sin comentarios.
+  mapfile -t _dep < <(
+    sed -n '/^depends=(/,/^)/p' "$META" | sed -E 's/#.*//; s/^[[:space:]]+//; s/[[:space:]]+$//' |
+      grep -vE '^(depends=\(|\)|)$'
+  )
+  # Del catálogo: lo que nombran las listas `paquetes = [...]`.
+  mapfile -t _cat < <(
+    grep -E '^[[:space:]]*paquetes[[:space:]]*=' "$COMPLEMENTOS" |
+      grep -oE '"[^"]+"' | tr -d '"' | sort -u
+  )
+  SOLAPADOS=()
+  for _p in "${_cat[@]+"${_cat[@]}"}"; do
+    for _d in "${_dep[@]+"${_dep[@]}"}"; do
+      [[ "$_p" == "$_d" ]] && SOLAPADOS+=("$_p") && break
+    done
+  done
+  if [[ ${#SOLAPADOS[@]} -gt 0 ]]; then
+    echo "${YELLOW}!! Estos paquetes están en vasakos-desktop y también entre los complementos:${OFF}" >&2
+    printf '     %s\n' "${SOLAPADOS[@]}" >&2
+    echo "${DIM}   El metapaquete los instala por dependencia, así que la casilla del" >&2
+    echo "   instalador no cambia nada: quien la desmarca se los lleva igual." >&2
+    echo "   Sacalos de las \`depends\` de vasakos-desktop, o del catálogo.${OFF}" >&2
+    echo >&2
+  fi
+fi
+
 # ── Decide what is out of date ────────────────────────────────────────────────
 #
 # `makepkg --packagelist` is cheap: it sources the PKGBUILD and prints the

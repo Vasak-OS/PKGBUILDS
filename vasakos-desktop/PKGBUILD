@@ -13,6 +13,11 @@
 # instalar. Ahora las dos listas nombran a `vasakos-desktop` y agregan
 # únicamente lo suyo.
 #
+# El criterio es **qué necesita el escritorio para funcionar**, y nada más. Lo
+# que hace falta para armar o arrancar la ISO va en `packages.x86_64`, y lo que
+# es una elección del usuario va en `complementos.toml` del instalador. Estas
+# tres listas no se pisan.
+#
 # Lo que **no** va acá, y por qué:
 #
 #   - `linux` y `linux-headers`: el kernel es una elección, no parte del
@@ -23,14 +28,30 @@
 #     una elección, y pacstrap lo instala en los dos casos.)
 #   - Lo que sólo tiene sentido en el medio live (`mkinitcpio-archiso`,
 #     `memtest86+`, `syslinux`, `edk2-shell`, `arch-install-scripts`, `pv`,
-#     `vasak-installer`, `archinstall`): queda en `packages.x86_64`.
+#     `vasak-installer`, `archinstall`): queda en `packages.x86_64`. Con él se
+#     fueron las herramientas de particionado y rescate (`gparted`,
+#     `partclone`, `parted`, `gptfdisk`, `fsarchiver`…) y las de máquina
+#     virtual (`spice-vdagent`, `open-vm-tools`, `virtualbox-guest-utils`): son
+#     del medio que instala, no del sistema instalado.
+#   - **El servidor X y sus once `xf86-*`.** VasakOS corre Wayfire sobre
+#     Wayland; ni el escritorio ni la sesión viva levantan un Xorg. Queda
+#     `xorg-xwayland`, que es lo que hace andar las aplicaciones que todavía
+#     hablan X.
+#   - **El bootloader.** archinstall lo instala él mismo: `archconfig.rs` fija
+#     `"bootloader": "Grub"` y el paquete entra por ahí, con lo que el usuario
+#     haya elegido. Declararlo también acá lo ataba a `grub` para siempre.
+#   - **Lo que el instalador ofrece elegir.** `firefox` y `broadcom-wl-dkms`
+#     estaban en esta lista *y* en `complementos.toml`, así que la elección era
+#     de mentira: quien pedía Brave, o «sin navegador», se llevaba Firefox
+#     igual. Una casilla que no cambia nada es peor que no tener la casilla.
+#     Lo mismo `vlc`, `gedit` y `galculator`: son aplicaciones, no escritorio.
 #
 # Sumar un paquete al escritorio es editar `depends` acá y subir el `pkgrel`.
 # No hay que tocar ninguna de las dos listas.
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=2
+pkgrel=3
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -92,15 +113,7 @@ depends=(
   btrfs-progs
   bcachefs-tools
   cifs-utils
-  open-iscsi
   nvme-cli
-
-  ## Boot
-  efibootmgr
-  efitools
-  grub
-  os-prober
-  refind
 
   # HARDWARE
 
@@ -108,24 +121,18 @@ depends=(
   amd-ucode
   intel-ucode
 
-  ## X system
+  ## Gráficos
+  #
+  # Wayland y nada más. El servidor X y los once `xf86-*` que había acá se
+  # fueron: VasakOS corre Wayfire, y ni el escritorio ni la sesión viva levantan
+  # un Xorg. `xorg-xwayland` queda porque es lo que hace andar las aplicaciones
+  # que todavía hablan X, y los `xorg-x*` que siguen son clientes, no servidor.
   mesa
   mesa-utils
   libva-mesa-driver
   intel-media-driver
-  xf86-input-libinput
-  xf86-input-evdev
-  xf86-video-amdgpu
-  xf86-video-ati
-  xf86-video-intel
-  xf86-video-qxl
-  xf86-video-vesa
-  xf86-video-fbdev
-  xf86-video-nouveau
-  xorg-server
   xorg-xwayland
   xorg-xdpyinfo
-  xorg-xinit
   xorg-xinput
   xorg-xkill
   xorg-xrandr
@@ -149,12 +156,7 @@ depends=(
   usbmuxd
   libfido2
   libusb-compat
-  fatresize
-  partclone
-  parted
-  squashfs-tools
   tpm2-tss
-  udftools
 
   ## Audio
   wireplumber
@@ -174,14 +176,11 @@ depends=(
   # SOFTWARE
 
   ## General
-  dmraid
   expect
   fakeroot
   freetype2
   git
-  gpart
   gpm
-  gptfdisk
   haveged
   hwdetect
   hwinfo
@@ -209,7 +208,6 @@ depends=(
   dnsmasq
   ethtool
   modemmanager
-  nbd
   ndisc6
   networkmanager
   networkmanager-openvpn
@@ -221,8 +219,6 @@ depends=(
   vpnc
   wireless-regdb
   wpa_supplicant
-  b43-fwcutter
-  broadcom-wl-dkms
   avahi
   openresolv
 
@@ -238,10 +234,7 @@ depends=(
   # HERRAMIENTAS
 
   ## Disco y diagnóstico
-  gparted
-  grsync
   hdparm
-  fsarchiver
   glances
   python-defusedxml
   python-packaging
@@ -329,16 +322,11 @@ depends=(
   vasakos-keyring
   archlinux-keyring
 
-  ## Tools
-  galculator
-
   ## Editor
   nano
   nano-syntax-highlighting
-  gedit
 
   ## Mutimedia
-  vlc
   imagemagick
   ffmpeg
 
@@ -362,9 +350,6 @@ depends=(
   libmpeg2
   libtheora
   xvidcore
-
-  ## Browser
-  firefox
 
   ## System
   fastfetch
@@ -407,13 +392,6 @@ depends=(
 
   ## Shells
   zsh
-
-  # VM SUPPORT
-
-  spice-vdagent
-  virtualbox-guest-utils
-  open-vm-tools
-  xf86-input-vmmouse
 )
 
 # Sin `package()` makepkg no arma nada. El paquete queda vacío a propósito: todo
