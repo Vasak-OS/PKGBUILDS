@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop
 pkgver=1.3.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Desktop for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
