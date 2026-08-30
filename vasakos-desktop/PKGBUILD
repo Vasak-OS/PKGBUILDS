@@ -289,6 +289,12 @@ depends=(
   vasakos-wallpapers
   vasak-settings
 
+  # Servicio de energía del sistema. El indicador de batería del panel y la
+  # página de Energía de la configuración hablan con él por D-Bus; el análisis
+  # de agosto ya lo marcaba como alta prioridad y nunca se agregó, así que en
+  # una portátil el dato de batería no aparecía.
+  upower
+
   ## Session daemons (systemd user services; replace polkit-gnome)
   polkit-vasak-agent
   vasak-keyring

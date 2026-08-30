@@ -25,6 +25,10 @@ depends=(
     'gst-libav'
     'networkmanager'
     'dbus'
+    # El indicador de batería y la página de Energía hablan con UPower por D-Bus
+    # (`org.freedesktop.UPower`). No venía declarado en ninguna receta ni en el
+    # metapaquete, así que en una portátil el dato de batería no aparecía.
+    'upower'
     'gtk-layer-shell'
 )
 makedepends=(

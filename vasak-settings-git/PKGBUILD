@@ -18,6 +18,10 @@ depends=(
     'pango'
     'webkit2gtk-4.1'
     'dbus'
+    # El indicador de batería y la página de Energía hablan con UPower por D-Bus
+    # (`org.freedesktop.UPower`). No venía declarado en ninguna receta ni en el
+    # metapaquete, así que en una portátil el dato de batería no aparecía.
+    'upower'
     # Al elegir un video de fondo se lo prepara una vez: se baja a la
     # resolución de la pantalla, se limita a 30 fps y se le saca el audio.
     # Sin ffmpeg eso no se puede hacer y el video se usa tal como está.
