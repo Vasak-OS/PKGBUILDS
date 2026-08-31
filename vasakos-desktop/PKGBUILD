@@ -40,18 +40,29 @@
 #   - **El bootloader.** archinstall lo instala él mismo: `archconfig.rs` fija
 #     `"bootloader": "Grub"` y el paquete entra por ahí, con lo que el usuario
 #     haya elegido. Declararlo también acá lo ataba a `grub` para siempre.
+#   - **Utilidades que no usa nada.** `duf` y `glances` duplicaban a
+#     vasak-monitor; `pkgfile`, `hdparm`, `tldr` y `rebuild-detector` eran
+#     comodidades de consola que sólo pedía esta lista. Y `poppler-glib`,
+#     `libopenraw` y `libgsf` estaban para miniaturas de PDF, RAW y documentos
+#     de Office, pero **ningún binario de VasakOS las enlaza** —comprobado con
+#     readelf sobre los 24— y ninguna aplicación las declara: no hay servicio de
+#     miniaturas que las cargue, y vasak-gallery trae su propio indexador.
+#   - **`fastfetch`**, que se instala pero no viaja en la ISO: lo nombra
+#     `paquetes.txt` del instalador, igual que `noto-fonts-extra`.
 #   - **Lo que el instalador ofrece elegir.** `firefox` y `broadcom-wl-dkms`
 #     estaban en esta lista *y* en `complementos.toml`, así que la elección era
 #     de mentira: quien pedía Brave, o «sin navegador», se llevaba Firefox
 #     igual. Una casilla que no cambia nada es peor que no tener la casilla.
 #     Lo mismo `vlc`, `gedit` y `galculator`: son aplicaciones, no escritorio.
+#     Y `git`, que es una herramienta de desarrollo: está en el complemento
+#     «desarrollo», que es donde se elige.
 #
 # Sumar un paquete al escritorio es editar `depends` acá y subir el `pkgrel`.
 # No hay que tocar ninguna de las dos listas.
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=5
+pkgrel=6
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -160,17 +171,12 @@ depends=(
   # SOFTWARE
 
   ## General
+  bash-completion
   fakeroot
   freetype2
-  git
-  libgsf
-  libopenraw
   plocate
   pacman-contrib
-  pkgfile
-  poppler-glib
   power-profiles-daemon
-  rebuild-detector
   reflector
   unrar
   unzip
@@ -201,16 +207,6 @@ depends=(
   # Bluetooth
   bluez
   bluez-utils
-
-  ## Laptop Support
-
-  # HERRAMIENTAS
-
-  ## Disco y diagnóstico
-  hdparm
-  bash-completion
-  tldr
-  duf
 
   # DESKTOP
 
@@ -312,7 +308,6 @@ depends=(
   xvidcore
 
   ## System
-  fastfetch
 
   ## Fonts
   #
