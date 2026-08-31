@@ -51,7 +51,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=4
+pkgrel=5
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -315,10 +315,15 @@ depends=(
   fastfetch
 
   ## Fonts
+  #
+  # `noto-fonts-extra` no está y no es un olvido: son 331 MB de **variantes**
+  # —pesos y anchos extra de las mismas familias—, no de alfabetos, así que
+  # sacarlo no pierde cobertura de ningún idioma. Era el paquete más grande de
+  # la ISO. Sigue instalándose en el sistema: lo nombra `paquetes.txt` del
+  # instalador, que es la lista del sistema instalado y no la del medio live.
   cantarell-fonts
   noto-fonts
   noto-fonts-emoji
-  noto-fonts-extra
   ttf-bitstream-vera
   ttf-dejavu
   ttf-liberation
