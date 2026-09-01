@@ -62,7 +62,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=7
+pkgrel=8
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -202,7 +202,15 @@ depends=(
   wireless-regdb
   wpa_supplicant
   avahi
-  openresolv
+  # `openresolv` **no** va acá, y sacarlo fue arreglar una instalación que no
+  # terminaba. Choca con `systemd-resolvconf`: los dos proveen `resolvconf` y
+  # los dos declaran que conflictúan con `resolvconf`, así que pedirlos juntos
+  # es un conjunto imposible. pacstrap moría con «unresolvable package
+  # conflicts detected» después de haber formateado el disco.
+  #
+  # Se queda `systemd-resolvconf` porque es el que usa el escritorio: la sesión
+  # resuelve por `systemd-resolved`, y `systemd-resolvconf` es el puente para
+  # que un cliente de VPN que llama a `resolvconf` le hable a él.
 
   # Bluetooth
   bluez
