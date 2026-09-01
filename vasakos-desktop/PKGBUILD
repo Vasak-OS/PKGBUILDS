@@ -62,7 +62,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=6
+pkgrel=7
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -272,6 +272,18 @@ depends=(
   # which is also where the journal of the desktop is read from.
   vasak-shot
   vasak-monitor
+
+  ## Identidad del sistema
+  #
+  # `/etc/lsb-release` con DISTRIB_DESCRIPTION="VasakOS". Estaba compilado y
+  # publicado y **no lo instalaba nadie**: no figuraba en esta lista, ni en
+  # packages.x86_64, ni en paquetes.txt. Sin él, `lsb_release -d` contesta lo de
+  # Arch, y eso aparece en el menú de arranque, en fastfetch y en cualquier
+  # script que pregunte qué distribución es ésta.
+  #
+  # El `/etc/os-release` lo trae vasak-desktop-settings, y el nombre del menú de
+  # GRUB sale de su drop-in en /etc/default/grub.d/.
+  lsb-release
 
   ## Repositories
   vasakos-mirrorlist
