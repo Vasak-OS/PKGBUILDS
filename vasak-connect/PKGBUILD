@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-connect
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="Use your Android phone's apps as windows on VasakOS"
 arch=('x86_64')
@@ -9,9 +9,14 @@ url="https://github.com/Vasak-OS/$pkgname"
 license=('GPL-3.0-or-later')
 # adb talks to the phone and scrcpy draws each app in its own virtual display.
 # Neither is optional: without them the service starts and can do nothing.
+#
+# scrcpy va con versión mínima: `--flex-display` —lo que hace que la ventana de
+# una app se pueda redimensionar— se estrenó en scrcpy 4.0. En una 3.x la opción
+# no existe, así que el proceso sale en el arranque y no se abre ninguna ventana:
+# la función no se degrada, desaparece.
 depends=(
     'android-tools'
-    'scrcpy'
+    'scrcpy>=4.0'
     'dbus'
     # The webcam bridge writes camera frames into a v4l2loopback device, so the
     # module has to exist for the feature to work at all.
