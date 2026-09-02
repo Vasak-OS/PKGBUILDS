@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-installer
-pkgver=0.1.5
+pkgver=0.1.6
 pkgrel=1
 pkgdesc="Instalador de VasakOS (interfaz Tauri sobre archinstall)"
 arch=('x86_64')
