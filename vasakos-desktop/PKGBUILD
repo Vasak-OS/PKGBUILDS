@@ -62,7 +62,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=8
+pkgrel=9
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -251,6 +251,14 @@ depends=(
   # de agosto ya lo marcaba como alta prioridad y nunca se agregó, así que en
   # una portátil el dato de batería no aparecía.
   upower
+
+  # Las herramientas de AppArmor: aa-status para ver qué hay cargado,
+  # apparmor_parser para compilar perfiles. El kernel de Arch trae el módulo
+  # compilado pero apagado, y vasak-desktop-settings lo enciende por la línea de
+  # arranque; sin este paquete el módulo queda activo pero sin nada con qué
+  # manejarlo. Todavía no hay perfiles propios, así que no confina nada: es la
+  # base para empezar a escribirlos.
+  apparmor
 
   ## Session daemons (systemd user services; replace polkit-gnome)
   polkit-vasak-agent
