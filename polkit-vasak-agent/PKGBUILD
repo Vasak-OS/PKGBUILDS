@@ -2,7 +2,7 @@
 
 pkgname=polkit-vasak-agent
 pkgver=0.2.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Agente de autenticación PolicyKit para VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/polkit-vasak"
@@ -29,7 +29,7 @@ makedepends=(
 source=("${pkgname}::git+${url}.git"
         "polkit-vasak-agent.service")
 sha256sums=('SKIP'
-            '4e0e18afb5d784a5a8426e781cea588f1efc62c7ac0e0b32a6503884c4f391fd')
+            '9de6fba02d60bed3255dfebc154b3056db0587595e70e2dcb36f7c3c10d73538')
 install="polkit-vasak-agent.install"
 
 # makepkg's global LTO injects -flto into CFLAGS/LDFLAGS. Crates that build C or
