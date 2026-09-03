@@ -13,10 +13,25 @@
 # instalar. Ahora las dos listas nombran a `vasakos-desktop` y agregan
 # únicamente lo suyo.
 #
-# El criterio es **qué necesita el escritorio para funcionar**, y nada más. Lo
-# que hace falta para armar o arrancar la ISO va en `packages.x86_64`, y lo que
-# es una elección del usuario va en `complementos.toml` del instalador. Estas
-# tres listas no se pisan.
+# El criterio es **qué necesita el escritorio para funcionar en cualquier
+# máquina**, y nada más. Hay cuatro listas y no se pisan:
+#
+#   1. Ésta: lo que necesita todo VasakOS, sea el equipo que sea.
+#   2. `archiso/packages.x86_64`: lo que hace falta para armar o arrancar la ISO.
+#      El medio live arranca en hardware desconocido, así que ahí van los
+#      controladores y firmware **de todos**.
+#   3. La detección del instalador (`hardware.rs`): los controladores que necesita
+#      **esa** máquina, decididos por lo que ató el kernel del medio live. No es
+#      opcional: sin el firmware de su audio, el equipo queda mudo.
+#   4. `complementos.toml`: las elecciones. Un complemento nunca puede ser
+#      necesario para arrancar, y por eso el punto 3 no vive ahí.
+#
+# La regla que hizo falta escribir: **el controlador de un fabricante no va
+# acá.** Llegó a llevar los de todos, así que cada instalación cargaba los
+# 41 MiB del controlador de vídeo de Intel y los 43 del firmware de audio de
+# Intel — en una máquina AMD también, donde no sirven para nada. Tampoco va el
+# microcódigo: archinstall elige el de la CPU que encuentra, y nombrar los dos
+# los instalaba a los dos.
 #
 # Lo que **no** va acá, y por qué:
 #
@@ -24,8 +39,14 @@
 #     escritorio. La ISO arranca con el suyo y archinstall instala el del
 #     sistema nuevo por su campo `kernels`; si el metapaquete dependiera de
 #     `linux`, cambiarse a otro kernel obligaría a conservar éste igual de
-#     todos modos. Cada lista lo nombra por su cuenta. (`base` sí está: no es
-#     una elección, y pacstrap lo instala en los dos casos.)
+#     todos modos. Cada lista lo nombra por su cuenta.
+#   - `base`, `sudo`, `linux-firmware` y `mkinitcpio`: son la **lista base** de
+#     archinstall (`__packages__[:4]`), que instala siempre. Nombrarlos acá no
+#     agregaba nada.
+#   - Las herramientas del sistema de archivos elegido (`btrfs-progs`,
+#     `xfsprogs`, `f2fs-tools`): las agrega archinstall según la elección
+#     (`installation_pkg`). Listarlas todas hacía que una instalación en btrfs se
+#     llevara además las de xfs y f2fs.
 #   - Lo que sólo tiene sentido en el medio live (`mkinitcpio-archiso`,
 #     `memtest86+`, `syslinux`, `edk2-shell`, `arch-install-scripts`, `pv`,
 #     `vasak-installer`, `archinstall`): queda en `packages.x86_64`. Con él se
@@ -72,25 +93,21 @@ license=('GPL-3.0-or-later')
 # contenido. La lista sigue el orden y los comentarios de la vieja
 # `packages.x86_64`, que era donde estaba escrito el porqué de cada elección.
 depends=(
+
   # BASE
 
   ## System
   iptables
-  base
   cryptsetup
   device-mapper
   diffutils
   inetutils
   less
-  linux-firmware
   logrotate
   man-db
   man-pages
-  mdadm
-  mkinitcpio
   mkinitcpio-busybox
   perl
-  sudo
   which
 
   ## SystemD
@@ -101,28 +118,17 @@ depends=(
   dosfstools
   e2fsprogs
   exfatprogs
-  f2fs-tools
   gvfs
   gvfs-afc
   gvfs-gphoto2
   gvfs-mtp
   gvfs-nfs
   gvfs-smb
-  lvm2
-  mtools
-  nfs-utils
   ntfs-3g
-  xfsprogs
-  btrfs-progs
-  bcachefs-tools
-  cifs-utils
-  nvme-cli
 
   # HARDWARE
 
   ## CPU
-  amd-ucode
-  intel-ucode
 
   ## Gráficos
   #
@@ -131,22 +137,14 @@ depends=(
   # un Xorg. `xorg-xwayland` queda porque es lo que hace andar las aplicaciones
   # que todavía hablan X, y los `xorg-x*` que siguen son clientes, no servidor.
   mesa
-  mesa-utils
-  intel-media-driver
   xorg-xwayland
   wayland
   wayland-protocols
-  wayland-utils
-  egl-wayland
   libva
-  virglrenderer
   libglvnd
 
   ## General
   openssh
-  smartmontools
-  usbutils
-  libfido2
   tpm2-tss
 
   ## Audio
@@ -165,8 +163,6 @@ depends=(
   gst-plugin-pipewire
   libportal
   libportal-gtk3
-  sof-firmware
-  alsa-firmware
 
   # SOFTWARE
 
@@ -189,18 +185,13 @@ depends=(
   ## Network
   bind
   dnsmasq
-  ethtool
-  modemmanager
   ndisc6
   networkmanager
   networkmanager-openvpn
   nss-mdns
   networkmanager-openconnect
   ppp
-  usb_modeswitch
   networkmanager-vpnc
-  wireless-regdb
-  wpa_supplicant
   avahi
   # `openresolv` **no** va acá, y sacarlo fue arreglar una instalación que no
   # terminaba. Choca con `systemd-resolvconf`: los dos proveen `resolvconf` y
@@ -211,10 +202,12 @@ depends=(
   # Se queda `systemd-resolvconf` porque es el que usa el escritorio: la sesión
   # resuelve por `systemd-resolved`, y `systemd-resolvconf` es el puente para
   # que un cliente de VPN que llama a `resolvconf` le hable a él.
-
-  # Bluetooth
-  bluez
-  bluez-utils
+  #
+  # `bluez` y `bluez-utils` **no** están: los pone el instalador cuando detecta
+  # un adaptador. Una máquina sin Bluetooth cargaba 5,5 MiB y un servicio para
+  # nada, y la pantalla de Bluetooth de Ajustes ya se esconde sin adaptador.
+  # Igual con `wpa_supplicant` —lo pide `networkmanager`— y con `modemmanager`,
+  # que es para banda ancha móvil.
 
   # DESKTOP
 
@@ -368,13 +361,16 @@ depends=(
   ttf-roboto
   adobe-source-code-pro-fonts
 
-  # Chino, japonés y coreano. `noto-fonts` cubre casi todos los sistemas de
-  # escritura del mundo —del árabe al devanagari— pero **no** los CJK, que van en
-  # su propio paquete por tamaño. Sin él, cualquier texto en esos idiomas se ve
-  # como cuadraditos vacíos: el título de un video, el nombre de una persona en
-  # un repositorio. Es de las cosas que hacen que un sistema parezca sin
-  # terminar, y le pasa a cualquiera, no sólo a quien lee esos idiomas.
-  noto-fonts-cjk
+  # Chino, japonés y coreano **no** están acá. `noto-fonts` cubre casi todos los
+  # sistemas de escritura del mundo —del árabe al devanagari— pero no los CJK,
+  # que van en su propio paquete por tamaño: 299 MiB, más que todos los
+  # controladores que este metapaquete llegó a tener juntos, y era el paquete más
+  # grande del escritorio.
+  #
+  # Sin ellas, un texto en esos idiomas se ve como cuadraditos, y eso le pasa a
+  # cualquiera y no sólo a quien los lee. Pero pagarlo en cada instalación por si
+  # acaso es lo que este metapaquete dejó de hacer: van como complemento
+  # `fuentes-cjk` del instalador, sin marcar, para que lo pague quien lo necesite.
 
   ## Shells
   zsh
