@@ -1,6 +1,6 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 pkgname=vasak-permissions
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="System permission service for VasakOS: camera, microphone, screen and online accounts"
 arch=('x86_64')
