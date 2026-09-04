@@ -12,7 +12,7 @@ pkgname=(
 )
 pkgver=0.4912.0
 pkgrel=1
-pkgdesc="Perfiles de AppArmor para el sistema completo, en modo complain"
+pkgdesc="Perfiles de AppArmor para el sistema completo (inertes hasta activarlos)"
 arch=('x86_64')
 url="https://github.com/roddhjav/apparmor.d"
 license=('GPL-2.0-only')
@@ -46,38 +46,54 @@ build() {
   export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
   export DISTRIBUTION=arch
   just prebuild
+
+  # Los drop-ins los genera el prebuild, así que el parche va acá y no en un
+  # prepare(): antes del build todavía no existen.
+  sed -i 's/^AppArmorProfile=\\([^-]\\)/AppArmorProfile=-\\1/' .build/systemd/*/* 
 }
 
-# Que todos los perfiles queden en modo complain.
+# Los drop-ins de D-Bus toleran que el perfil no esté cargado.
 #
-# Es la razón por la que se empaqueta esto: mil quinientos perfiles nuevos que
-# bloquean, entrando todos juntos, es la forma más rápida de romper un
-# escritorio sin saber qué lo rompió. En complain registran lo que habrían
-# bloqueado y no bloquean nada, así que se puede medir antes de decidir.
+# El paquete instala perfiles en /usr/share/apparmor.d —inertes— y además
+# cuatro drop-ins de systemd que ponen `AppArmorProfile=dbus-system` en D-Bus.
+# Esos sí tienen efecto apenas se instala, y vienen **sin** el prefijo `-`, o
+# sea exigiendo que el perfil esté cargado.
 #
-# Se comprueba en vez de confiar en una bandera del build a propósito: no
-# encontré cuál la controla, y una suposición equivocada acá se descubriría con
-# el sistema ya instalado. Si el build cambiara y empezara a producir perfiles
-# que bloquean, esto falla y el paquete no se genera — que es exactamente lo que
-# tiene que pasar.
+# Como los perfiles no se cargan hasta que alguien corra `aa-install`, eso deja
+# una ventana en la que D-Bus depende de algo que no existe. En una unidad de
+# usuario se comprobó que no impide arrancar; en una del sistema no se pudo
+# comprobar sin root, y el modo de fallo sería un equipo que no levanta.
+#
+# No vale la pena averiguarlo por las malas: el prefijo `-` hace que un perfil
+# ausente se ignore, y no cambia nada cuando sí está cargado.
+#
+# Se aplica al final de build() porque los drop-ins los genera el prebuild.
+# Que el build haya producido algo y que los drop-ins sean tolerantes.
+#
+# No se comprueba el modo de los perfiles: se elige al **activarlos**, no al
+# construirlos. El paquete los deja inertes en /usr/share/apparmor.d y es
+# `aa-install --complain` quien los pone en /etc/apparmor.d en modo aviso.
+#
+# Eso se descubrió porque un check anterior exigía complain en el build y falló
+# con 1537 perfiles de 1592 — que era el check haciendo su trabajo, sólo que
+# comprobando lo que no correspondía.
 check() {
   cd "$srcdir/$pkgbase-$pkgver"
-  local total=0 sin=0 archivo
-  while IFS= read -r archivo; do
-    grep -q '^profile ' "$archivo" || continue
-    total=$((total + 1))
-    grep -qE 'flags=\([^)]*complain' "$archivo" || {
-      sin=$((sin + 1))
-      [ "$sin" -le 5 ] && echo "  sin complain: ${archivo#./}" >&2
-    }
-  done < <(find .build -type f 2>/dev/null)
-
-  if [ "$total" -eq 0 ]; then
-    echo "check: no encontré ningún perfil que comprobar; el build cambió de forma" >&2
+  local perfiles
+  perfiles=$(find .build/apparmor.d -type f 2>/dev/null | wc -l)
+  if [ "$perfiles" -lt 1000 ]; then
+    echo "check: sólo $perfiles perfiles; el build cambió de forma" >&2
     return 1
   fi
-  echo "check: $total perfiles, $sin sin modo complain"
-  [ "$sin" -eq 0 ]
+  echo "check: $perfiles perfiles construidos"
+
+  local sin_guion
+  sin_guion=$(grep -l "^AppArmorProfile=[^-]" .build/systemd/*/* 2>/dev/null | wc -l)
+  if [ "$sin_guion" -ne 0 ]; then
+    echo "check: $sin_guion drop-ins exigen un perfil cargado; ver prepare()" >&2
+    return 1
+  fi
+  echo "check: los drop-ins de systemd toleran un perfil ausente"
 }
 
 package_apparmor.d() {
