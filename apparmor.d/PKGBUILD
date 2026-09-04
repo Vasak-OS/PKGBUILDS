@@ -49,7 +49,7 @@ build() {
 
   # Los drop-ins los genera el prebuild, así que el parche va acá y no en un
   # prepare(): antes del build todavía no existen.
-  sed -i 's/^AppArmorProfile=\\([^-]\\)/AppArmorProfile=-\\1/' .build/systemd/*/* 
+  sed -i 's/^AppArmorProfile=\([^-]\)/AppArmorProfile=-\1/' .build/systemd/*/*
 }
 
 # Los drop-ins de D-Bus toleran que el perfil no esté cargado.
