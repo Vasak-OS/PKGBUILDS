@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.12
+pkgver=0.5.13
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -74,8 +74,10 @@ package() {
     # El perfil de AppArmor del llavero. Es el único que se instala: los otros
     # que se escribieron tumbaban las ventanas Tauri y quedaron en
     # apparmor-borrador/, sin empaquetarse.
-    install -Dm644 "$srcdir/$pkgname/etc/apparmor.d/vasak-keyring" \
-        "$pkgdir/etc/apparmor.d/vasak-keyring"
+    for perfil in vasak-keyring vasak-appimage; do
+        install -Dm644 "$srcdir/$pkgname/etc/apparmor.d/$perfil" \
+            "$pkgdir/etc/apparmor.d/$perfil"
+    done
     cp -r $srcdir/$pkgname/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
