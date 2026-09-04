@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.10
+pkgver=0.5.11
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -39,9 +39,10 @@ depends=(
     'gtk-session-lock'
     'libsoup3'
     'pam'
-    # vasak-apparmor.service carga los perfiles con apparmor_parser. La unidad
-    # se saltea sola si AppArmor no está activo, pero el binario tiene que
-    # estar.
+    # AppArmor se enciende desde la línea de arranque (el drop-in de grub.d) y
+    # el paquete trae aa-status y apparmor_parser para poder mirarlo. Todavía
+    # no hay perfiles propios: los que se escribieron tumbaban el escritorio y
+    # están en apparmor-borrador/ del repositorio, sin instalarse.
     'apparmor'
     'webkit2gtk-4.1'
 )
@@ -60,22 +61,17 @@ package() {
     # without the session environment.
     install -Dm755 "$srcdir/$pkgname/etc/pinentry/preexec" \
         "$pkgdir/etc/pinentry/preexec"
-    # Los perfiles de AppArmor y el drop-in de GRUB. Iban en el repo desde hace
+    # El drop-in de GRUB. Iba en el repo desde hace
     # rato y el paquete no los instalaba: el `package()` sólo copiaba `etc/skel`
     # y `etc/pinentry`, así que el `GRUB_DISTRIBUTOR="VasakOS"` nunca llegó a un
     # sistema instalado —el plugin del instalador venía avisando «el menú de
-    # arranque va a decir Arch» en cada instalación— y los perfiles nuevos
-    # habrían corrido la misma suerte.
+    # arranque va a decir Arch» en cada instalación—.
     #
     # Se instalan uno por uno y no con un `cp -r etc/`: el repo tiene también un
     # `etc/os-release`, y ese archivo lo posee el paquete `filesystem`.
     # Copiarlo sería un conflicto que hace fallar el pacstrap.
     install -Dm644 "$srcdir/$pkgname/etc/default/grub.d/10-vasakos.cfg" \
         "$pkgdir/etc/default/grub.d/10-vasakos.cfg"
-    for perfil in "$srcdir/$pkgname"/etc/apparmor.d/vasak-*; do
-        install -Dm644 "$perfil" "$pkgdir/etc/apparmor.d/$(basename "$perfil")"
-    done
-
     cp -r $srcdir/$pkgname/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
