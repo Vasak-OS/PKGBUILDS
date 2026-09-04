@@ -11,6 +11,15 @@ post_install() {
     mkdir -p /etc/systemd/system/multi-user.target.wants
     ln -sf /usr/lib/systemd/system/vasak-apparmor.service \
         /etc/systemd/system/multi-user.target.wants/vasak-apparmor.service
+
+    # La configuración de PipeWire se genera a partir de la de upstream. El
+    # hook de pacman la rehace cuando PipeWire se actualiza; acá se hace la
+    # primera vez, al instalarnos a nosotros.
+    #
+    # Si falla no se aborta: el generador se aparta solo y PipeWire sigue con
+    # su propia configuración, sin el socket adicional.
+    /usr/lib/vasak/generar-pipewire-conf || \
+        echo "  (aviso: no se pudo generar /etc/pipewire/pipewire.conf)"
 }
 post_upgrade() {
     post_install
@@ -18,4 +27,9 @@ post_upgrade() {
 post_remove() {
     rm -f /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
     rm -f /etc/systemd/system/multi-user.target.wants/vasak-apparmor.service
+    # Sólo si lo generamos nosotros: si alguien puso el suyo, no es nuestro.
+    if [ -f /etc/pipewire/pipewire.conf ] && \
+       head -1 /etc/pipewire/pipewire.conf | grep -qF "ARCHIVO GENERADO"; then
+        rm -f /etc/pipewire/pipewire.conf
+    fi
 }

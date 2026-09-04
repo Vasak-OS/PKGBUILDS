@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.14
+pkgver=0.5.15
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -42,6 +42,9 @@ depends=(
     # AppArmor se enciende desde la línea de arranque (el drop-in de grub.d), y
     # vasak-apparmor.service carga el perfil del llavero con apparmor_parser.
     'apparmor'
+    # El generador de /etc/pipewire/pipewire.conf valida lo que produce con
+    # spa-json-dump antes de instalarlo, y ese binario viene acá.
+    'pipewire'
     'webkit2gtk-4.1'
 )
 source=("git+${url}.git")
@@ -80,5 +83,6 @@ package() {
     done
     cp -r $srcdir/$pkgname/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
+    chmod a+x $pkgdir/usr/lib/vasak/generar-pipewire-conf
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
 }
