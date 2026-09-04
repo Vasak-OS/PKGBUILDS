@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.11
+pkgver=0.5.12
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -39,10 +39,8 @@ depends=(
     'gtk-session-lock'
     'libsoup3'
     'pam'
-    # AppArmor se enciende desde la línea de arranque (el drop-in de grub.d) y
-    # el paquete trae aa-status y apparmor_parser para poder mirarlo. Todavía
-    # no hay perfiles propios: los que se escribieron tumbaban el escritorio y
-    # están en apparmor-borrador/ del repositorio, sin instalarse.
+    # AppArmor se enciende desde la línea de arranque (el drop-in de grub.d), y
+    # vasak-apparmor.service carga el perfil del llavero con apparmor_parser.
     'apparmor'
     'webkit2gtk-4.1'
 )
@@ -72,6 +70,12 @@ package() {
     # Copiarlo sería un conflicto que hace fallar el pacstrap.
     install -Dm644 "$srcdir/$pkgname/etc/default/grub.d/10-vasakos.cfg" \
         "$pkgdir/etc/default/grub.d/10-vasakos.cfg"
+
+    # El perfil de AppArmor del llavero. Es el único que se instala: los otros
+    # que se escribieron tumbaban las ventanas Tauri y quedaron en
+    # apparmor-borrador/, sin empaquetarse.
+    install -Dm644 "$srcdir/$pkgname/etc/apparmor.d/vasak-keyring" \
+        "$pkgdir/etc/apparmor.d/vasak-keyring"
     cp -r $srcdir/$pkgname/usr $pkgdir/
     chmod a+x $pkgdir/usr/bin/vasak-session
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
