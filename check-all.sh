@@ -12,6 +12,7 @@
 #
 #   frontend  `vue-tsc --noEmit`, when the build script gates on it
 #   lint      `biome check` y `cargo clippy -D warnings`
+#   lock      `cargo metadata --locked`
 #   backend   `cargo check`
 #   git       whether HEAD is ahead of its remote
 #
@@ -23,6 +24,18 @@
 # `parseInt` sin base y un crate que no compilaba en el MSRV que declaraba. Un
 # lint que siempre falla es un lint que nadie mira; el gate es para que no vuelva
 # a pasar.
+#
+# El del lock parece de trámite y cortó una compilación de once paquetes por la
+# mitad. `makepkg` construye con `--locked` —que es lo correcto: un paquete tiene
+# que salir de las mismas dependencias exactas dos veces— y ahí un lock
+# desfasado deja de ser cosmético:
+#
+#     error: cannot update the lock file … because --locked was passed
+#
+# Lo que lo hace fácil de pasar por alto es que **el lock registra también la
+# versión del propio paquete**, así que subir la versión en el `Cargo.toml` es un
+# cambio de dos archivos. Compilando a mano no se nota nunca, porque cargo
+# actualiza el lock solo; se nota en `makepkg`, ya empezada la tanda.
 #
 # That last one matters more than it looks: the PKGBUILDs fetch sources with
 # `git+https://...`, so makepkg builds the *pushed* branch. Commits sitting in
@@ -199,6 +212,18 @@ necesita_instalar() {
     if ! have cargo; then
       report backend "${YELLOW}skipped${OFF} ${DIM}(cargo not installed)${OFF}"
     else
+      # Antes que `cargo check` porque no compila nada: lee los manifiestos y
+      # compara. Se corre desde `src-tauri` y cargo sube al workspace que lo
+      # contenga, así que da igual si el lock está ahí o en la raíz del repo.
+      if (cd "$dir/src-tauri" && cargo metadata --locked --format-version 1 >/dev/null 2>&1); then
+        report lock "${GREEN}ok${OFF}"
+      else
+        report lock "${RED}desincronizado${OFF} ${DIM}(makepkg falla con --locked)${OFF}"
+        (cd "$dir/src-tauri" && cargo metadata --locked --format-version 1 2>&1 \
+          | grep -E '^error' | head -2 | sed 's/^/             /')
+        FAILED+=("$app (lock)")
+      fi
+
       if (cd "$dir/src-tauri" && cargo check --quiet >/dev/null 2>&1); then
         report backend "${GREEN}ok${OFF}"
         # `-D warnings` para que un aviso cuente como fallo: en cero cuesta
