@@ -20,6 +20,14 @@ post_install() {
     # su propia configuración, sin el socket adicional.
     /usr/lib/vasak/generar-pipewire-conf || \
         echo "  (aviso: no se pudo generar /etc/pipewire/pipewire.conf)"
+
+    # El socket adicional lo crea systemd, y en una sesión ya iniciada no
+    # aparece hasta que se reinicia la unidad. Un daemon-reload no alcanza.
+    # No se puede hacer desde acá —esto corre como root y es una unidad de
+    # usuario—, así que se avisa.
+    echo "  Para que el socket privilegiado de PipeWire aparezca en la sesión actual:"
+    echo "    systemctl --user daemon-reload && systemctl --user restart pipewire.socket pipewire.service"
+    echo "  (en el próximo arranque no hace falta)"
 }
 post_upgrade() {
     post_install
