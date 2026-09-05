@@ -51,6 +51,65 @@ source=("git+${url}.git")
 sha256sums=('SKIP')
 install="vasak-desktop-settings.install"
 
+# Que los tres lugares que nombran fuentes digan lo mismo.
+#
+# Son tres porque los leen tres cosas distintas: `vasak.conf` lo leen las
+# aplicaciones propias, los `settings.ini` los leen las aplicaciones GTK al
+# arrancar, y el esquema de GSettings es lo que el portal informa a las que están
+# aisladas. Nada obliga a que coincidan, y no coincidían: uno decía «Roboto 10»,
+# otro «Noto Sans, 11» y el tercero «FantasqueSansM Nerd Font Propo», así que el
+# escritorio se veía con una fuente distinta según qué abrieras.
+#
+# El chequeo va acá y no en el repositorio de origen porque ese repo son archivos
+# de configuración sin nada que ejecute tests, y `makepkg` corre `check()` en
+# cada compilación — que es exactamente cuando importa.
+check() {
+    cd "$srcdir/$pkgname"
+
+    local vasak_apps gtk3 gtk4 esquema
+    # La familia de `apps` en vasak.conf, sin comillas.
+    vasak_apps=$(sed -n 's/.*"apps"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        etc/skel/.config/vasak/vasak.conf)
+    # La de GTK viene con el tamaño pegado: se le saca el número final.
+    gtk3=$(sed -n 's/^gtk-font-name=\(.*[^0-9]\)[[:space:]]*[0-9]*$/\1/p' \
+        etc/skel/.config/gtk-3.0/settings.ini | sed 's/[[:space:]]*$//')
+    gtk4=$(sed -n 's/^gtk-font-name=\(.*[^0-9]\)[[:space:]]*[0-9]*$/\1/p' \
+        etc/skel/.config/gtk-4.0/settings.ini | sed 's/[[:space:]]*$//')
+    esquema=$(sed -n "s/^font-name='\(.*[^0-9]\)[[:space:]]*[0-9]*'$/\1/p" \
+        schemas/99_vasakos-settings.gschema.override | sed 's/[[:space:]]*$//')
+
+    if [[ -z $vasak_apps || -z $gtk3 || -z $gtk4 || -z $esquema ]]; then
+        echo "check: no se pudo leer alguna de las cuatro fuentes" >&2
+        echo "  vasak.conf=[$vasak_apps] gtk3=[$gtk3] gtk4=[$gtk4] esquema=[$esquema]" >&2
+        return 1
+    fi
+
+    if [[ $vasak_apps != "$gtk3" || $vasak_apps != "$gtk4" || $vasak_apps != "$esquema" ]]; then
+        echo "check: las fuentes de las aplicaciones no coinciden entre sí" >&2
+        echo "  vasak.conf        $vasak_apps" >&2
+        echo "  gtk-3.0           $gtk3" >&2
+        echo "  gtk-4.0           $gtk4" >&2
+        echo "  gschema.override  $esquema" >&2
+        return 1
+    fi
+
+    # La monoespaciada, entre la terminal y lo que se le informa a GTK.
+    local vasak_term esquema_mono
+    vasak_term=$(sed -n 's/.*"terminal"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        etc/skel/.config/vasak/vasak.conf)
+    esquema_mono=$(sed -n "s/^monospace-font-name='\(.*[^0-9]\)[[:space:]]*[0-9]*'$/\1/p" \
+        schemas/99_vasakos-settings.gschema.override | sed 's/[[:space:]]*$//')
+
+    if [[ $vasak_term != "$esquema_mono" ]]; then
+        echo "check: la monoespaciada no coincide" >&2
+        echo "  vasak.conf        $vasak_term" >&2
+        echo "  gschema.override  $esquema_mono" >&2
+        return 1
+    fi
+
+    echo "check: las fuentes coinciden — $vasak_apps / $vasak_term"
+}
+
 package() {
     cd "$srcdir/$pkgname"
     install -dm755 $pkgdir/etc
