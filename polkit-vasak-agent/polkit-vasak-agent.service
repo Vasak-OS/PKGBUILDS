@@ -13,43 +13,27 @@ ExecStart=/usr/bin/vasak-polkit-agent
 Restart=on-failure
 RestartSec=3
 
-# Por acá pasa tu contraseña de administrador: es el diálogo que aparece cada
-# vez que algo pide permiso para tocar el sistema. Corría sin una sola
-# restricción.
+# ⚠ Esta unidad va SIN endurecer, y no es un olvido: se intentó y dejó al
+# sistema sin poder autenticar nada.
 #
-# Sin red, que en un proceso al que le escribís la contraseña es lo primero: lo
-# que tipeás ahí no tiene por dónde irse. Con polkit se habla por el bus del
-# sistema, que es un socket local.
-RestrictAddressFamilies=AF_UNIX AF_NETLINK
-
-NoNewPrivileges=yes
-CapabilityBoundingSet=
-PrivateTmp=yes
-ProtectClock=yes
-ProtectControlGroups=yes
-ProtectHostname=yes
-ProtectKernelLogs=yes
-ProtectKernelModules=yes
-ProtectKernelTunables=yes
-ProtectProc=invisible
-RestrictRealtime=yes
-RestrictSUIDSGID=yes
-LockPersonality=yes
-SystemCallArchitectures=native
-SystemCallFilter=@system-service
-SystemCallErrorNumber=EPERM
-ProtectSystem=full
-
-# De todo /dev ve la placa de video, para dibujar el diálogo, y nada más: ni el
-# teclado en crudo, ni la cámara, ni los discos. Va con PrivateDevices +
-# BindPaths y no con DeviceAllow porque —comprobado— ese filtro no se aplica en
-# unidades de usuario y habría quedado de adorno.
-PrivateDevices=yes
-BindPaths=-/dev/dri
-
-# Quedan afuera MemoryDenyWriteExecute y RestrictNamespaces: el diálogo es una
-# ventana Tauri, y WebKit compila su JavaScript en memoria y usa espacios de
-# nombres para su propio aislamiento.
+# Para validar la contraseña, este agente ejecuta un helper **setuid**
+# (/usr/bin/polkit-agent-helper-dbus), que es como polkit consigue leer las
+# credenciales del sistema desde un proceso del usuario. `NoNewPrivileges=yes`
+# impide esa transición: el helper arranca como el usuario común, ve que no es
+# root y responde «setuid bit missing» —culpando al archivo, que sí tiene el
+# bit—. El resultado es una contraseña correcta rechazada, sin ninguna pista de
+# por qué.
+#
+# Y no alcanza con no escribir `NoNewPrivileges`: en una unidad de usuario lo
+# implican solas casi todas las de seccomp —SystemCallFilter, PrivateDevices
+# (que instala un filtro para @raw-io), RestrictAddressFamilies,
+# MemoryDenyWriteExecute, LockPersonality, RestrictRealtime, RestrictSUIDSGID—.
+# Un `CapabilityBoundingSet=` vacío rompe lo mismo por otro camino, quitándole
+# al helper las capacidades que acaba de ganar.
+#
+# Es el mismo choque que dejó a vasak-idle sin endurecer, y por la misma razón
+# de fondo: un proceso cuyo trabajo es escalar privilegios no puede correr en
+# una caja que se los prohíbe. Entre las dos cosas gana poder autenticarse.
 
 [Install]
 WantedBy=graphical-session.target
