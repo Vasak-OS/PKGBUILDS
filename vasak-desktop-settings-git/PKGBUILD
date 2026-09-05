@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.17
+pkgver=0.5.18
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -141,6 +141,16 @@ package() {
             "$pkgdir/etc/apparmor.d/$perfil"
     done
     cp -r $srcdir/$pkgname/usr $pkgdir/
+
+    # La regla de fontconfig se instala en `conf.avail` y se activa con un enlace
+    # en `conf.d`, que es el mecanismo que documenta fontconfig y el que usan sus
+    # propias reglas. Dejarla sólo en `conf.avail` la deja escrita y sin efecto;
+    # ponerla sólo en `conf.d` la vuelve imposible de desactivar sin borrar un
+    # archivo del paquete.
+    install -dm755 "$pkgdir/etc/fonts/conf.d"
+    ln -sf /usr/share/fontconfig/conf.avail/60-vasakos.conf \
+        "$pkgdir/etc/fonts/conf.d/60-vasakos.conf"
+
     chmod a+x $pkgdir/usr/bin/vasak-session
     chmod a+x $pkgdir/usr/lib/vasak/generar-pipewire-conf
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
