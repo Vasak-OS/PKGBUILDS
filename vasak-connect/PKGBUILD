@@ -2,7 +2,7 @@
 
 pkgname=vasak-connect
 pkgver=0.2.3
-pkgrel=1
+pkgrel=2
 pkgdesc="Use your Android phone's apps as windows on VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -18,6 +18,11 @@ depends=(
     'android-tools'
     'scrcpy>=4.0'
     'dbus'
+    # La cámara del teléfono pasa por el mismo permiso que la del equipo: se
+    # pregunta antes de encenderla y se puede revocar desde Configuración. La
+    # consulta falla cerrada, así que sin este servicio la cámara no enciende
+    # —y por eso es dependencia y no opcional: sin él la función no anda.
+    'vasak-permissions'
     # The webcam bridge writes camera frames into a v4l2loopback device, so the
     # module has to exist for the feature to work at all.
     #
