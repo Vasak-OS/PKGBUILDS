@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=1
+pkgrel=2
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -140,6 +140,12 @@ package() {
         install -Dm644 "$srcdir/$pkgname/etc/apparmor.d/$perfil" \
             "$pkgdir/etc/apparmor.d/$perfil"
     done
+
+    # Qué perfiles del sistema hacen cumplir y no sólo avisan. Lo lee
+    # `aa-install`, que trae apparmor.d-tools, y le gana al `--complain` del hook
+    # de pacman para los perfiles que nombra.
+    install -Dm644 "$srcdir/$pkgname/etc/apparmor/flags.d/50-vasakos.conf" \
+        "$pkgdir/etc/apparmor/flags.d/50-vasakos.conf"
     cp -r $srcdir/$pkgname/usr $pkgdir/
 
     # La regla de fontconfig se instala en `conf.avail` y se activa con un enlace
