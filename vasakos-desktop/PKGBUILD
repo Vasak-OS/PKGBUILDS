@@ -83,7 +83,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=9
+pkgrel=10
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -249,9 +249,22 @@ depends=(
   # apparmor_parser para compilar perfiles. El kernel de Arch trae el módulo
   # compilado pero apagado, y vasak-desktop-settings lo enciende por la línea de
   # arranque; sin este paquete el módulo queda activo pero sin nada con qué
-  # manejarlo. Todavía no hay perfiles propios, así que no confina nada: es la
-  # base para empezar a escribirlos.
+  # manejarlo.
   apparmor
+
+  # Perfiles para los programas del sistema, en modo aviso.
+  #
+  # Hasta acá lo único confinado eran los AppImage y el llavero: todo lo que se
+  # instala con pacman corría sin ninguna restricción. Este paquete trae 1592
+  # perfiles y su hook instala los que corresponden a los programas presentes
+  # —unos 581 en un escritorio—.
+  #
+  # Entran en modo aviso a propósito: no bloquean nada y dejan en el diario qué
+  # habrían bloqueado. Son perfiles de terceros que nunca corrieron en VasakOS,
+  # y uno mal ajustado no se ve como un problema de seguridad sino como un
+  # programa que dejó de andar sin decir por qué. Medir primero en máquinas
+  # reales es la única forma de no descubrirlo en la de alguien.
+  apparmor.d
 
   ## Session daemons (systemd user services; replace polkit-gnome)
   polkit-vasak-agent

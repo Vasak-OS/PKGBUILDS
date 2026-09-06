@@ -12,6 +12,22 @@ post_install() {
     ln -sf /usr/lib/systemd/system/vasak-apparmor.service \
         /etc/systemd/system/multi-user.target.wants/vasak-apparmor.service
 
+    # Y la unidad de AppArmor de upstream, que es la que carga todo lo que hay
+    # en /etc/apparmor.d.
+    #
+    # Sin esto, los perfiles que el hook de apparmor.d instala ahí —unos 581 en
+    # un escritorio— se quedan en el disco sin que nadie los cargue nunca: el
+    # equipo tiene los archivos, `aa-status` no muestra ninguno, y parece que
+    # AppArmor está funcionando. Un sistema que aparenta confinar y no confina
+    # es peor que uno que no lo intenta, porque nadie va a revisarlo.
+    #
+    # La nuestra sigue existiendo aparte: carga los perfiles de VasakOS antes
+    # de sysinit.target, o sea antes de que arranque nada que confinar.
+    if [ -f /usr/lib/systemd/system/apparmor.service ]; then
+        ln -sf /usr/lib/systemd/system/apparmor.service \
+            /etc/systemd/system/multi-user.target.wants/apparmor.service
+    fi
+
     # La configuración de PipeWire se genera a partir de la de upstream. El
     # hook de pacman la rehace cuando PipeWire se actualiza; acá se hace la
     # primera vez, al instalarnos a nosotros.
@@ -35,6 +51,7 @@ post_upgrade() {
 post_remove() {
     rm -f /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
     rm -f /etc/systemd/system/multi-user.target.wants/vasak-apparmor.service
+    rm -f /etc/systemd/system/multi-user.target.wants/apparmor.service
     # Sólo si lo generamos nosotros: si alguien puso el suyo, no es nuestro.
     if [ -f /etc/pipewire/pipewire.conf ] && \
        head -1 /etc/pipewire/pipewire.conf | grep -qF "ARCHIVO GENERADO"; then

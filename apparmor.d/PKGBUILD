@@ -11,7 +11,7 @@ pkgname=(
   apparmor.d-tools
 )
 pkgver=0.4912.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Perfiles de AppArmor para el sistema completo (inertes hasta activarlos)"
 arch=('x86_64')
 url="https://github.com/roddhjav/apparmor.d"
@@ -50,6 +50,22 @@ build() {
   # Los drop-ins los genera el prebuild, así que el parche va acá y no en un
   # prepare(): antes del build todavía no existen.
   sed -i 's/^AppArmorProfile=\([^-]\)/AppArmorProfile=-\1/' .build/systemd/*/*
+
+  # Los perfiles entran en modo aviso, no bloqueando.
+  #
+  # El hook de pacman corre `aa-install --install` en cada transacción e
+  # instala los perfiles que corresponden a los programas presentes —581 en un
+  # equipo de escritorio, no los 1592 del paquete—. Sin `--complain` entran
+  # haciendo cumplir, y son perfiles de terceros que nunca corrieron en
+  # VasakOS: uno mal ajustado no se ve como un problema de seguridad, se ve
+  # como un programa que dejó de andar sin decir por qué.
+  #
+  # En modo aviso no bloquean nada y dejan en el diario qué habrían bloqueado,
+  # que es la única forma de saber qué se rompe **antes** de que se rompa en la
+  # máquina de alguien. El modo se elige al instalar y no al construir, así que
+  # el lugar correcto para esto es el hook.
+  sed -i 's|^Exec = /usr/bin/aa-install --install$|Exec = /usr/bin/aa-install --install --complain|' \
+    share/libalpm/hooks/apparmor.hook
 }
 
 # Los drop-ins de D-Bus toleran que el perfil no esté cargado.
@@ -94,6 +110,18 @@ check() {
     return 1
   fi
   echo "check: los drop-ins de systemd toleran un perfil ausente"
+
+  # Que el hook instale en modo aviso.
+  #
+  # Es un `sed` contra el texto de upstream: si cambian esa línea —otro
+  # ejecutable, otro orden de banderas— el sed no empareja, no falla, y el
+  # paquete sale instalando en enforce sin que nadie lo note. Justo el modo de
+  # falla que este paquete no se puede permitir.
+  if ! grep -q -- "--complain" share/libalpm/hooks/apparmor.hook; then
+    echo "check: el hook no instala en modo aviso; ¿cambió la línea de upstream?" >&2
+    return 1
+  fi
+  echo "check: el hook de pacman instala los perfiles en modo aviso"
 }
 
 package_apparmor.d() {
