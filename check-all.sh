@@ -10,6 +10,7 @@
 #
 # For each app repo in the workspace this checks:
 #
+#   version   que los cuatro manifiestos digan el mismo número
 #   frontend  `vue-tsc --noEmit`, when the build script gates on it
 #   lint      `biome check` y `cargo clippy -D warnings`
 #   lock      `cargo metadata --locked`
@@ -71,7 +72,7 @@ DO_INSTALL=1
 DO_GIT=1
 DO_LINT=1
 
-usage() { sed -n '2,48p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit "${1:-0}"; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -90,6 +91,27 @@ done
 [[ -d "$HOME/.cargo/bin" ]] && PATH="$HOME/.cargo/bin:$PATH"
 
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# La versión declarada en un manifiesto, sea JSON o TOML.
+#
+# A ojo y no con un parser porque no hay ninguno garantizado en una máquina que
+# recién compila: `jq` puede no estar, y el `version` que importa es siempre el
+# primero del archivo.
+ver_json() { grep -m1 -Po '"version"\s*:\s*"\K[^"]*' "$1" 2>/dev/null; }
+ver_toml() { grep -m1 -Po '^version\s*=\s*"\K[^"]*' "$1" 2>/dev/null; }
+
+# El PKGBUILD del paquete, con o sin `-git`.
+#
+# El directorio del workspace es el nombre del paquete menos el sufijo, así que
+# desde acá hay que probar las dos formas. Si no aparece ninguna —un plugin, o
+# algo que todavía no se empaqueta— no hay con qué comparar y no se compara.
+pkgbuild_de() {
+  local cand
+  for cand in "$REPO_DIR/$1/PKGBUILD" "$REPO_DIR/$1-git/PKGBUILD"; do
+    [[ -f "$cand" ]] && { echo "$cand"; return 0; }
+  done
+  return 1
+}
 
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; DIM=$'\033[2m'; OFF=$'\033[0m'
 [[ -t 1 ]] || { RED=""; GREEN=""; YELLOW=""; DIM=""; OFF=""; }
@@ -136,6 +158,45 @@ for app in "${APPS[@]}"; do
   # hand costs far more than printing eleven characters.
   commit="$(cd "$dir" && git rev-parse --short HEAD 2>/dev/null)"
   echo "── $app${commit:+ ${DIM}@ $commit${OFF}}"
+
+  # ── version ────────────────────────────────────────────────────────────────
+  #
+  # Hasta cuatro archivos declaran la versión —`package.json`, `Cargo.toml`,
+  # `tauri.conf.json` y el `pkgver` del PKGBUILD— y ninguno lee al otro. Subirla
+  # es editar los cuatro, y olvidarse de uno no rompe nada visible: compila,
+  # empaqueta e instala igual.
+  #
+  # Las dos formas de olvidarse duelen distinto. Si el `pkgver` va adelante, el
+  # paquete se instala como 0.6.0 y el binario sigue diciendo 0.5.0, así que un
+  # reporte de error apunta al código equivocado. Si va atrás, es peor y es
+  # silencioso: el repositorio ya tiene publicada esa versión, `update-repo.sh`
+  # da el paquete por hecho y **no lo recompila**, con lo cual todo lo que se
+  # mergeó desde entonces no llega a nadie. Pasó, con once paquetes a la vez.
+  VERSIONES=()
+  anotar() { [[ -n "${2:-}" ]] && VERSIONES+=("$1=$2"); return 0; }
+
+  anotar package.json "$(ver_json "$dir/package.json")"
+  anotar tauri.conf.json "$(ver_json "$dir/src-tauri/tauri.conf.json")"
+  # En un workspace el miembro dice `version.workspace = true` y el número está
+  # en la raíz; el grep no encuentra nada y se cae al Cargo.toml de arriba.
+  v_toml="$(ver_toml "$dir/src-tauri/Cargo.toml")"
+  [[ -z "$v_toml" ]] && v_toml="$(ver_toml "$dir/Cargo.toml")"
+  anotar Cargo.toml "$v_toml"
+
+  # Un `pkgver()` calcula la versión desde el git de origen, así que no hay
+  # ningún número fijo con el cual discrepar.
+  if pkgb="$(pkgbuild_de "$app")" && ! grep -q '^pkgver()' "$pkgb"; then
+    anotar PKGBUILD "$(grep -m1 -Po '^pkgver=\K.*' "$pkgb")"
+  fi
+
+  if [[ ${#VERSIONES[@]} -gt 1 ]]; then
+    if [[ "$(printf '%s\n' "${VERSIONES[@]}" | cut -d= -f2 | sort -u | wc -l)" -gt 1 ]]; then
+      report version "${RED}discrepan${OFF} ${DIM}${VERSIONES[*]}${OFF}"
+      FAILED+=("$app (version)")
+    else
+      report version "${GREEN}ok${OFF} ${DIM}${VERSIONES[0]#*=}${OFF}"
+    fi
+  fi
 
   # Si hay que correr `bun install` en este directorio.
 #
