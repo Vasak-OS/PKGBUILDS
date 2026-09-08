@@ -45,6 +45,15 @@ post_install() {
     # corre el parser al final de cada transacción, así que queda hecha al
     # instalar o actualizar.
     #
+    # Efecto que conviene conocer: con esto puesto, `apparmor_parser` sin
+    # privilegios sale con código 1 porque no puede escribir en
+    # /var/cache/apparmor. El directorio es de root y tiene que serlo —una
+    # caché de política que un usuario pueda escribir es política que root
+    # carga al arrancar—. Quien quiera comprobar la sintaxis de un perfil como
+    # usuario tiene que pasarle `--cache-loc` a un directorio suyo. Los
+    # llamadores del sistema (la unidad de arranque, el hook de apparmor.d, el
+    # daemon de permisos) corren como root y no lo notan.
+    #
     # Se agrega la línea en vez de instalar el archivo entero porque
     # parser.conf es del paquete apparmor y dos paquetes no pueden tener el
     # mismo archivo. Pacman lo trata como backup, así que este agregado
