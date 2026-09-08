@@ -22,6 +22,25 @@ post_upgrade() {
     mkdir -p /etc/systemd/user/graphical-session.target.wants
     ln -sf /usr/lib/systemd/user/vasak-permissions-agent.service \
         /etc/systemd/user/graphical-session.target.wants/vasak-permissions-agent.service
+
+    # Y el agente, que vive en la sesión de cada persona.
+    #
+    # La línea de arriba reinicia el servicio del sistema; el agente no lo toca
+    # nadie, así que después de actualizar sigue corriendo el binario viejo
+    # hasta el próximo login. Eso ya escondió un arreglo entero: el paquete
+    # decía la versión nueva, el proceso era el de antes, y el error que se
+    # había corregido seguía pasando igual.
+    #
+    # `--machine <usuario>@.host` es cómo se llega desde root al systemd de una
+    # sesión. Se hace sólo para quien tenga sesión abierta, y sin abortar si
+    # falla: esto también corre en el chroot del instalador, donde no hay
+    # ninguna.
+    for usuario in $(loginctl list-users --no-legend 2>/dev/null \
+                     | awk '$4 == "active" { print $2 }'); do
+        systemctl --user --machine="$usuario@.host" daemon-reload 2>/dev/null || true
+        systemctl --user --machine="$usuario@.host" \
+            try-restart vasak-permissions-agent.service 2>/dev/null || true
+    done
 }
 
 pre_remove() {
