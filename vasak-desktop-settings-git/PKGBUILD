@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=4
+pkgrel=5
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -27,6 +27,11 @@ depends=(
     # Ships /usr/bin/vasak-lock-screen, which both the idle unit and the
     # Super+L binding in wayfire.ini call: without it there is no screen lock.
     'vasak-session-manager'
+    # Lo corre `grub-mkconfig` para poner los otros sistemas operativos en el
+    # menú de arranque, que es lo que habilita el drop-in de grub.d. De `grub`
+    # es apenas una dependencia opcional, así que sin declararlo acá la opción
+    # queda puesta y no hay nada que ejecutar.
+    'os-prober'
     # File pickers and screen sharing. The wlroots backend is the one that can
     # capture a Wayfire output.
     'xdg-desktop-portal'
