@@ -2,7 +2,7 @@
 
 pkgname=polkit-vasak-agent
 pkgver=0.2.0
-pkgrel=3
+pkgrel=4
 pkgdesc="Agente de autenticación PolicyKit para VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/polkit-vasak"
@@ -67,7 +67,12 @@ build() {
     export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
     export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
     bun run tauri build
-    cargo build --release --manifest-path src-tauri/Cargo.toml \
+    # `--locked` para que un candado desfasado corte la compilación en vez de
+    # resolverse solo y en silencio. El paquete versiona su `Cargo.lock`, así
+    # que acá no hay nada que resolver: si cargo quisiera tocarlo es que el
+    # manifiesto y el candado no coinciden, y eso es un problema del
+    # repositorio, no algo que el empaquetado deba tapar.
+    cargo build --release --locked --manifest-path src-tauri/Cargo.toml \
         --bin polkit-agent-helper-dbus
 }
 
