@@ -1,3 +1,6 @@
+# Con qué se reconoce lo que agregamos a parser.conf, que es de otro paquete.
+VSK_MARCA_CACHE='# VasakOS: caché de política compilada de AppArmor'
+
 post_install() {
     # Idle lock runs under systemd, not wayfire autostart.
     mkdir -p /etc/systemd/user/graphical-session.target.wants
@@ -28,6 +31,31 @@ post_install() {
             /etc/systemd/system/multi-user.target.wants/apparmor.service
     fi
 
+    # Que apparmor_parser guarde en disco la política ya compilada.
+    #
+    # Sin esto cada arranque la recompila desde el texto, y en un equipo real
+    # eso son 23 de los 33 segundos de userspace. No es tiempo en paralelo:
+    # apparmor.service declara Before=sysinit.target, así que todo lo demás
+    # espera a que termine. Compilar los 699 perfiles cuesta 27,7 s; leerlos de
+    # la caché, 0,41 s.
+    #
+    # Se paga con unos 41 MB en /var/cache/apparmor, y con nada de tiempo al
+    # arrancar: la caché se rehace sola cuando cambia un perfil o cuando
+    # cambian las capacidades de AppArmor del kernel, y el hook de apparmor.d
+    # corre el parser al final de cada transacción, así que queda hecha al
+    # instalar o actualizar.
+    #
+    # Se agrega la línea en vez de instalar el archivo entero porque
+    # parser.conf es del paquete apparmor y dos paquetes no pueden tener el
+    # mismo archivo. Pacman lo trata como backup, así que este agregado
+    # sobrevive a las actualizaciones de apparmor.
+    if [ -f /etc/apparmor/parser.conf ] && \
+       ! grep -qE '^[[:space:]]*write-cache[[:space:]]*$' /etc/apparmor/parser.conf; then
+        # Sin línea en blanco delante: son exactamente las dos líneas que
+        # post_remove borra, así que el archivo vuelve a quedar como estaba.
+        printf '%s\nwrite-cache\n' "$VSK_MARCA_CACHE" >> /etc/apparmor/parser.conf
+    fi
+
     # La configuración de PipeWire se genera a partir de la de upstream. El
     # hook de pacman la rehace cuando PipeWire se actualiza; acá se hace la
     # primera vez, al instalarnos a nosotros.
@@ -52,6 +80,12 @@ post_remove() {
     rm -f /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
     rm -f /etc/systemd/system/multi-user.target.wants/vasak-apparmor.service
     rm -f /etc/systemd/system/multi-user.target.wants/apparmor.service
+    # Lo que le agregamos a parser.conf, que es de apparmor: se saca la marca
+    # y la línea que la sigue, y sólo si la marca está.
+    if [ -f /etc/apparmor/parser.conf ]; then
+        sed -i "\\|^$VSK_MARCA_CACHE\$|,+1d" /etc/apparmor/parser.conf
+    fi
+
     # Sólo si lo generamos nosotros: si alguien puso el suyo, no es nuestro.
     if [ -f /etc/pipewire/pipewire.conf ] && \
        head -1 /etc/pipewire/pipewire.conf | grep -qF "ARCHIVO GENERADO"; then
