@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=3
+pkgrel=4
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -146,6 +146,11 @@ package() {
     # de pacman para los perfiles que nombra.
     install -Dm644 "$srcdir/$pkgname/etc/apparmor/flags.d/50-vasakos.conf" \
         "$pkgdir/etc/apparmor/flags.d/50-vasakos.conf"
+
+    # Sin cupo de printk, para que una denegación no se pierda camino al
+    # servicio de permisos: lo mide el propio archivo.
+    install -Dm644 "$srcdir/$pkgname/etc/sysctl.d/50-vasakos-auditoria.conf" \
+        "$pkgdir/etc/sysctl.d/50-vasakos-auditoria.conf"
     cp -r $srcdir/$pkgname/usr $pkgdir/
 
     # La regla de fontconfig se instala en `conf.avail` y se activa con un enlace
