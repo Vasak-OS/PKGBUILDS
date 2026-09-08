@@ -83,7 +83,7 @@
 
 pkgname=vasakos-desktop
 pkgver=1
-pkgrel=10
+pkgrel=11
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"
@@ -290,6 +290,11 @@ depends=(
   vasak-file-manager
   vasak-gallery
   vasak-resonance
+  # El editor de texto. Va en el metapaquete y no como extra porque es lo que
+  # abre el gestor de archivos al hacer «abrir» sobre un .txt o un .conf: sin
+  # él, `open_with_default` no encuentra nada para `text/plain` y el escritorio
+  # no puede abrir un archivo de texto.
+  vasak-text
   # Screenshots (bound to PrtSc in the default wayfire.ini) and the system monitor,
   # which is also where the journal of the desktop is read from.
   vasak-shot
