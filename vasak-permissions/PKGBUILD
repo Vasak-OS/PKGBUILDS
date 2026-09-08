@@ -45,7 +45,11 @@ build() {
     cargo build --release --locked -p vasak-permissions-daemon
 
     bun install
-    bun run tauri build
+    # `-- --locked` le pasa la bandera a cargo, que es el runner de `tauri
+    # build`. Sin ella, un candado desfasado se resuelve solo y en silencio en
+    # vez de cortar la compilación: dos builds del mismo commit pueden dar
+    # binarios distintos y nada lo dice.
+    bun run tauri build -- --locked
 }
 
 package() {

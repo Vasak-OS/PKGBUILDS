@@ -73,7 +73,11 @@ build() {
     unset CARGO_ENCODED_RUSTFLAGS
     export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
     export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
-    bun run tauri build
+    # `-- --locked` le pasa la bandera a cargo, que es el runner de `tauri
+    # build`. Sin ella, un candado desfasado se resuelve solo y en silencio en
+    # vez de cortar la compilación: dos builds del mismo commit pueden dar
+    # binarios distintos y nada lo dice.
+    bun run tauri build -- --locked
 }
 
 package() {
