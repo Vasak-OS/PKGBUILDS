@@ -2,7 +2,7 @@
 
 pkgname=vasak-keyring
 pkgver=0.6.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -43,7 +43,15 @@ build() {
     export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
     # The daemon and the PAM module are plain Rust, and they are the half that
     # has to work even if the graphical one fails to build.
-    cargo build --release -p vasak-keyring -p pam-vasak-keyring
+    # `--locked` para que un candado desfasado corte la compilación en vez de
+    # resolverse solo y en silencio. Sin esto, cada compilación resolvía las
+    # dependencias de nuevo y dos builds del mismo commit podían dar binarios
+    # distintos — en el paquete que guarda todas las contraseñas de la sesión,
+    # eso es no poder contestar de qué código salió lo que está instalado.
+    #
+    # Va después de versionar el candado (Vasak-OS/vasak-keyring#12): al revés
+    # el paquete no compilaría, porque se compila desde el remoto.
+    cargo build --release --locked -p vasak-keyring -p pam-vasak-keyring
 
     # The dialog. `tauri build` is what produces the frontend it embeds; a bare
     # cargo build would compile it against whatever ../dist happened to hold.
