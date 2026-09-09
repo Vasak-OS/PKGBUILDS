@@ -65,6 +65,55 @@ post_install() {
         printf '%s\nwrite-cache\n' "$VSK_MARCA_CACHE" >> /etc/apparmor/parser.conf
     fi
 
+    # Instantáneas antes de cada transacción de pacman.
+    #
+    # El instalador ya deja el disco listo: crea siete subvolúmenes de btrfs con
+    # `@` como raíz, que es la disposición que snapper espera. Faltaba que
+    # alguien las tomara.
+    #
+    # `snap-pac` trae los hooks de pacman y no hay que escribir ninguno; lo
+    # único que hace falta es que exista una configuración de snapper, porque
+    # sin ninguna sus hooks no hacen nada. `snapper-cleanup.timer` se encarga de
+    # la rotación, que es la parte que uno escribiría mal: sin ella el disco se
+    # llena de instantáneas viejas y nadie se entera hasta que no entra una
+    # actualización.
+    #
+    # Sólo en btrfs. El instalador también ofrece ext4 y xfs, y ahí no hay
+    # instantáneas que tomar: `snap-pac` se queda quieto solo, porque recorre la
+    # lista de configuraciones y no hay ninguna.
+    if [ "$(findmnt -no FSTYPE / 2>/dev/null)" = "btrfs" ] && \
+       ! snapper -c root get-config >/dev/null 2>&1; then
+        # Crea también el subvolumen `/.snapshots`, que va anidado dentro de `@`
+        # y por eso no entra en sus propias instantáneas.
+        if snapper -c root create-config / 2>/dev/null; then
+            # Cuánto se guarda. Los valores por omisión de snapper apuntan a un
+            # servidor: cincuenta instantáneas y hasta la mitad del disco. El
+            # instalador acepta discos de 20 GiB, así que acá se guarda menos.
+            #
+            # `TIMELINE_CREATE=no` a propósito: no queremos una instantánea por
+            # hora, queremos una por transacción de pacman — que es el momento
+            # en que el sistema cambia y puede romperse. La limpieza por
+            # antigüedad sí queda encendida.
+            snapper -c root set-config \
+                NUMBER_CLEANUP=yes \
+                NUMBER_MIN_AGE=1800 \
+                NUMBER_LIMIT=10 \
+                NUMBER_LIMIT_IMPORTANT=5 \
+                TIMELINE_CREATE=no \
+                TIMELINE_CLEANUP=yes \
+                SPACE_LIMIT=0.2 2>/dev/null || true
+            echo "  Instantáneas de btrfs activadas: se toma una antes y otra después de cada"
+            echo "  transacción de pacman, y se conservan las diez últimas."
+        fi
+    fi
+
+    # La rotación. Sin esto las instantáneas se acumulan hasta llenar el disco.
+    #
+    # `enable` y no `enable --now`: esto también corre en el chroot del
+    # instalador, donde systemd no está atendiendo y `--now` fallaría llevándose
+    # el resto del script.
+    systemctl enable snapper-cleanup.timer 2>/dev/null || true
+
     # La configuración de PipeWire se genera a partir de la de upstream. El
     # hook de pacman la rehace cuando PipeWire se actualiza; acá se hace la
     # primera vez, al instalarnos a nosotros.

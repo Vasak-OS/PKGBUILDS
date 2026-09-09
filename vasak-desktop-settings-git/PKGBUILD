@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=8
+pkgrel=9
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -40,6 +40,13 @@ depends=(
     # de las cosas que nadie reporta y todos ven.
     'noto-fonts'
     'ttf-meslo-nerd'
+    # Instantáneas de btrfs antes de cada transacción de pacman. `snap-pac` trae
+    # los hooks y `snapper` la rotación; sin una configuración de snapper los
+    # hooks no hacen nada, así que en ext4 y xfs quedan quietos solos.
+    #
+    # Los dos están en `extra`, no en el AUR.
+    'snapper'
+    'snap-pac'
     # `etc/skel/.gnupg/gpg-agent.conf` apunta a `/usr/bin/vasak-pinentry`, que
     # lo trae este paquete. Si faltara, `gpg-agent` no cae al pinentry de Arch:
     # falla el pedido de contraseña entero.
