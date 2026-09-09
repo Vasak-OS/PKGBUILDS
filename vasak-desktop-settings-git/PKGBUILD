@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=6
+pkgrel=7
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -40,6 +40,15 @@ depends=(
     # de las cosas que nadie reporta y todos ven.
     'noto-fonts'
     'ttf-meslo-nerd'
+    # `etc/skel/.gnupg/gpg-agent.conf` apunta a `/usr/bin/vasak-pinentry`, que
+    # lo trae este paquete. Si faltara, `gpg-agent` no cae al pinentry de Arch:
+    # falla el pedido de contraseña entero.
+    #
+    # El binario aparece en 0.7.0, que es donde entró el pinentry. Sin el mínimo,
+    # una instalación con la versión anterior tendría la configuración apuntando
+    # a un programa que no está, y `gpg-agent` no cae al pinentry de Arch: falla
+    # el pedido entero.
+    'vasak-keyring>=0.7.0'
     # Lo corre `grub-mkconfig` para poner los otros sistemas operativos en el
     # menú de arranque, que es lo que habilita el drop-in de grub.d. De `grub`
     # es apenas una dependencia opcional, así que sin declararlo acá la opción
@@ -155,6 +164,15 @@ package() {
     install -dm755 $pkgdir/etc/skel
     cp -r $srcdir/$pkgname/etc/skel $pkgdir/etc/
 
+    # `~/.gnupg` con 0700, que es lo que gpg exige.
+    #
+    # git no guarda el modo de un directorio, así que el `cp -r etc/skel` de
+    # arriba lo deja en 0755 y gpg arranca quejándose de permisos inseguros en
+    # cada operación. Se corrige acá, que es donde el modo existe.
+    install -dm700 "$pkgdir/etc/skel/.gnupg"
+    install -Dm600 "$srcdir/$pkgname/etc/skel/.gnupg/gpg-agent.conf" \
+        "$pkgdir/etc/skel/.gnupg/gpg-agent.conf"
+
     # Lets pinentry find the graphical dialog even when gpg-agent was started
     # without the session environment.
     install -Dm755 "$srcdir/$pkgname/etc/pinentry/preexec" \
@@ -171,10 +189,16 @@ package() {
     install -Dm644 "$srcdir/$pkgname/etc/default/grub.d/10-vasakos.cfg" \
         "$pkgdir/etc/default/grub.d/10-vasakos.cfg"
 
-    # El perfil de AppArmor del llavero. Es el único que se instala: los otros
-    # que se escribieron tumbaban las ventanas Tauri y quedaron en
-    # apparmor-borrador/, sin empaquetarse.
-    for perfil in vasak-keyring vasak-appimage; do
+    # Los perfiles de AppArmor que sí se instalan.
+    #
+    # Son los de los procesos que **no** levantan una ventana Tauri: los otros
+    # que se escribieron tumbaban el escritorio —casi mil volcados de WebKit en
+    # un arranque— y quedaron en apparmor-borrador/, sin empaquetarse.
+    #
+    # `vasak-accounts` entra por eso mismo: es un demonio de root sin interfaz,
+    # así que esa clase de caída no le aplica. Va en complain, como el del
+    # llavero.
+    for perfil in vasak-keyring vasak-appimage vasak-accounts; do
         install -Dm644 "$srcdir/$pkgname/etc/apparmor.d/$perfil" \
             "$pkgdir/etc/apparmor.d/$perfil"
     done

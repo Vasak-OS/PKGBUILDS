@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-keyring
-pkgver=0.6.0
-pkgrel=2
+pkgver=0.7.0
+pkgrel=1
 pkgdesc="Native Secret Service keyring (AES-256-GCM/Argon2id) with PAM auto-unlock for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -92,6 +92,15 @@ package() {
     # aparte. Sin él, cada `git push` vuelve a pedir la frase.
     install -Dm755 "target/release/vasak-ssh-askpass" \
         "$pkgdir/usr/bin/vasak-ssh-askpass"
+
+    # El que `gpg-agent` lanza para pedir una contraseña. Mismo `tauri build`,
+    # misma razón para ir aparte.
+    #
+    # Sin él, GPG usaba el pinentry de GTK o el de curses según lo que el
+    # envoltorio de Arch encontrara: el diálogo más delicado del sistema era el
+    # único que no se parecía al resto del escritorio.
+    install -Dm755 "target/release/vasak-pinentry" \
+        "$pkgdir/usr/bin/vasak-pinentry"
 
     # D-Bus activation, so a client that asks for org.freedesktop.secrets can
     # bring the daemon up. Without this it only worked because the systemd user
