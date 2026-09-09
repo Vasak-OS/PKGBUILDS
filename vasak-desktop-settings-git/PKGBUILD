@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=5
+pkgrel=6
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -27,6 +27,19 @@ depends=(
     # Ships /usr/bin/vasak-lock-screen, which both the idle unit and the
     # Super+L binding in wayfire.ini call: without it there is no screen lock.
     'vasak-session-manager'
+    # Las fuentes que nombra la configuración que este paquete envía.
+    #
+    # `etc/skel/.config/vasak/vasak.conf`, los `settings.ini` de GTK, el
+    # `gschema.override` y la regla de fontconfig dicen las cuatro «Noto Sans» y
+    # «MesloLGL Nerd Font Mono». Estaban declaradas en el metapaquete del
+    # escritorio y no acá, que es el que las nombra: instalado solo, este
+    # paquete apuntaba a fuentes que podían no estar.
+    #
+    # Una `font-family` que no está no falla — fontconfig elige otra— así que el
+    # síntoma no es un error sino un escritorio con la letra equivocada, que es
+    # de las cosas que nadie reporta y todos ven.
+    'noto-fonts'
+    'ttf-meslo-nerd'
     # Lo corre `grub-mkconfig` para poner los otros sistemas operativos en el
     # menú de arranque, que es lo que habilita el drop-in de grub.d. De `grub`
     # es apenas una dependencia opcional, así que sin declararlo acá la opción
@@ -112,7 +125,27 @@ check() {
         return 1
     fi
 
-    echo "check: las fuentes coinciden — $vasak_apps / $vasak_term"
+    # Y que existan, no sólo que coincidan.
+    #
+    # Los cuatro archivos pueden estar de acuerdo en una fuente que no instala
+    # nadie, y eso no falla en ningún lado: fontconfig elige otra y el
+    # escritorio se ve con la letra equivocada. En un chroot limpio lo único que
+    # hay instalado son las dependencias declaradas, así que esto comprueba de
+    # punta a punta que `depends` cubra lo que la configuración pide.
+    if command -v fc-list >/dev/null; then
+        local familia
+        for familia in "$vasak_apps" "$vasak_term"; do
+            if ! fc-list : family | tr ',' '\n' | grep -qxF "$familia"; then
+                echo "check: la configuración pide «$familia» y no hay quien la instale" >&2
+                echo "  agregala a depends() con el paquete que la provee" >&2
+                return 1
+            fi
+        done
+    else
+        echo "check: sin fontconfig, no se puede comprobar que las fuentes existan" >&2
+    fi
+
+    echo "check: las fuentes coinciden y están — $vasak_apps / $vasak_term"
 }
 
 package() {

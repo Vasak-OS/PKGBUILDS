@@ -386,12 +386,19 @@ depends=(
   ttf-liberation
   ttf-opensans
 
-  # Las que **nombra la configuración por defecto** y no instalaba nadie.
+  # Las que la persona puede elegir en Configuración.
   #
-  # `vasak-desktop-settings` envía en `/etc/skel` un `vasak.conf` que pide
-  # «MesloLGL Nerd Font Mono» para la terminal y «FantasqueSansM Nerd Font
-  # Propo» para los títulos y las aplicaciones, y un `gschema.override` que pide
-  # «Roboto» y «Source Code Pro». Ninguna de las cuatro estaba en ninguna receta.
+  # La lista de Apariencia → Fuentes es la de las fuentes **instaladas**, así que
+  # éstas no son peso muerto: son el menú. Sin ellas la pantalla ofrece lo que
+  # haya quedado por dependencias de otra cosa.
+  #
+  # Las dos que la configuración por defecto **nombra** —«Noto Sans» y «MesloLGL
+  # Nerd Font Mono»— ya no dependen de esta lista: las declara
+  # `vasak-desktop-settings`, que es el paquete que las nombra, y su `check()`
+  # comprueba en cada compilación que existan. Antes estaban sólo acá, y la
+  # configuración cambió de fuentes sin que esta lista se enterara — el
+  # comentario que había acá seguía hablando de Fantasque, Roboto y Source Code
+  # Pro como si fueran las de por omisión, y hacía rato que no lo eran.
   #
   # Una `font-family` que no está instalada **no falla**: fontconfig elige la que
   # se le parezca y sigue. El resultado es un escritorio que no se ve como fue
