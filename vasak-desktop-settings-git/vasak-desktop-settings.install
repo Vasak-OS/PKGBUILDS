@@ -154,6 +154,35 @@ post_install() {
     # las deja con la configuración `root` que se creó más arriba.
     systemctl enable grub-btrfsd.service 2>/dev/null || true
 
+    # Y rehacer el menú, que es lo que hace que todo lo de arriba se vea.
+    #
+    # `grub.cfg` no se regenera solo en Arch. Sin esto, dos cosas que este
+    # paquete configura quedan escritas y sin efecto hasta que alguien corra
+    # `grub-mkconfig` a mano:
+    #
+    #   - el drop-in de /etc/default/grub.d, que es donde va
+    #     `GRUB_DISABLE_OS_PROBER=false` —o sea, los otros sistemas operativos
+    #     en el menú—;
+    #   - la línea que trae el submenú de instantáneas, que la escribe
+    #     `41_snapshots-btrfs` y sólo durante `grub-mkconfig`.
+    #
+    # `grub-btrfsd` termina rehaciéndolo cuando aparece o desaparece una
+    # instantánea, pero eso es después del próximo arranque **y** de la próxima
+    # transacción de pacman. Quien instala el paquete y va a mirar si el menú
+    # tiene las instantáneas no ve nada, y concluye que no funciona.
+    #
+    # No corre en el chroot del instalador: ahí GRUB todavía no está instalado
+    # —lo instala archinstall después— así que `command -v` falla y esto se
+    # saltea solo. Y archinstall corre su propio `grub-mkconfig` al final.
+    #
+    # Si falla no se aborta: el menú anterior sigue siendo válido, y una
+    # actualización que se caiga por esto sería peor que un menú desactualizado.
+    if command -v grub-mkconfig >/dev/null 2>&1 && [ -f /boot/grub/grub.cfg ]; then
+        echo "  Actualizando el menú de arranque..."
+        grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1 || \
+            echo "  (aviso: no se pudo rehacer el menú de arranque; correr grub-mkconfig -o /boot/grub/grub.cfg)"
+    fi
+
     # La configuración de PipeWire se genera a partir de la de upstream. El
     # hook de pacman la rehace cuando PipeWire se actualiza; acá se hace la
     # primera vez, al instalarnos a nosotros.
@@ -178,13 +207,13 @@ post_remove() {
     rm -f /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
     rm -f /etc/systemd/system/multi-user.target.wants/vasak-apparmor.service
     rm -f /etc/systemd/system/multi-user.target.wants/apparmor.service
-    # Lo que le agregamos a parser.conf, que es de apparmor: se saca la marca
-    # y la línea que la sigue, y sólo si la marca está.
-    # Ídem con el config de grub-btrfs.
+    # Lo que le agregamos a config, que es de grub-btrfs: se saca la marca y la
+    # línea que la sigue, y sólo si la marca está.
     if [ -f /etc/default/grub-btrfs/config ]; then
         sed -i "\\|^$VSK_MARCA_ARRANQUE\$|,+1d" /etc/default/grub-btrfs/config
     fi
 
+    # Ídem con parser.conf, que es de apparmor.
     if [ -f /etc/apparmor/parser.conf ]; then
         sed -i "\\|^$VSK_MARCA_CACHE\$|,+1d" /etc/apparmor/parser.conf
     fi

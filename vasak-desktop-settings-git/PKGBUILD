@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=10
+pkgrel=11
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -112,6 +112,10 @@ check() {
     # La copia del kernel para las instantáneas: se ejercita contra directorios
     # temporales, sin tocar /boot ni necesitar btrfs.
     ./pruebas/arranque.sh || return 1
+
+    # Y que lo que le escribimos a archivos de otros paquetes se pueda sacar
+    # entero. Corre contra el `.install` de este mismo directorio.
+    VSK_INSTALL="$startdir/$install" ./pruebas/marcas-en-archivos-ajenos.sh || return 1
 
     local vasak_apps gtk3 gtk4 esquema
     # La familia de `apps` en vasak.conf, sin comillas.
