@@ -1,5 +1,7 @@
 # Con qué se reconoce lo que agregamos a parser.conf, que es de otro paquete.
 VSK_MARCA_CACHE='# VasakOS: caché de política compilada de AppArmor'
+# Ídem para el config de grub-btrfs, que es del paquete grub-btrfs.
+VSK_MARCA_ARRANQUE='# VasakOS: el kernel de cada instantánea'
 
 post_install() {
     # Idle lock runs under systemd, not wayfire autostart.
@@ -114,6 +116,44 @@ post_install() {
     # el resto del script.
     systemctl enable snapper-cleanup.timer 2>/dev/null || true
 
+    # Que las instantáneas se puedan arrancar, y que arranquen bien.
+    #
+    # `grub-btrfs` pone cada instantánea en el menú de GRUB. Por sí solo no
+    # alcanza acá, y por una razón concreta: el ESP se monta en /boot, así que
+    # el kernel vive en FAT, afuera de btrfs. `grub-btrfs` lo detecta —compara
+    # el UUID de /boot con el de /— y elige su camino `boot_separate`, en el que
+    # **todas** las entradas arrancan con el kernel de hoy. Volver a una
+    # instantánea anterior a una actualización de kernel daría el kernel nuevo
+    # con los módulos viejos: arranca, y arranca sin red ni gráficos.
+    #
+    # Por eso el kernel se guarda además adentro del subvolumen raíz (ver
+    # /usr/lib/vasak/copiar-arranque) y acá se le dice a grub-btrfs que busque
+    # ahí. Con eso los dos UUID coinciden, toma el camino `boot_bounded`, y cada
+    # entrada arranca la instantánea con **su** kernel.
+    #
+    # El archivo es del paquete grub-btrfs y dos paquetes no pueden tener el
+    # mismo: se le agrega una línea con una marca, y post_remove la saca.
+    if [ -f /etc/default/grub-btrfs/config ] && \
+       ! grep -q "^$VSK_MARCA_ARRANQUE\$" /etc/default/grub-btrfs/config; then
+        printf '%s\nGRUB_BTRFS_BOOT_DIRNAME="/var/lib/vasak/arranque"\n' \
+            "$VSK_MARCA_ARRANQUE" >> /etc/default/grub-btrfs/config
+    fi
+
+    # La primera copia. Después la mantiene el hook de pacman, pero el hook se
+    # dispara con los paquetes de kernel: sin esto la copia no existiría hasta
+    # la próxima actualización de kernel, y las instantáneas de mientras tanto
+    # no tendrían con qué arrancar.
+    /usr/lib/vasak/copiar-arranque || \
+        echo "  (aviso: no se pudo guardar el kernel para las instantáneas)"
+
+    # El daemon que rehace el submenú cuando aparece o desaparece una
+    # instantánea. Sin él el menú queda como estaba en la última vez que alguien
+    # corrió grub-mkconfig a mano.
+    #
+    # La unidad de upstream ya viene apuntada a /.snapshots, que es donde snapper
+    # las deja con la configuración `root` que se creó más arriba.
+    systemctl enable grub-btrfsd.service 2>/dev/null || true
+
     # La configuración de PipeWire se genera a partir de la de upstream. El
     # hook de pacman la rehace cuando PipeWire se actualiza; acá se hace la
     # primera vez, al instalarnos a nosotros.
@@ -140,6 +180,11 @@ post_remove() {
     rm -f /etc/systemd/system/multi-user.target.wants/apparmor.service
     # Lo que le agregamos a parser.conf, que es de apparmor: se saca la marca
     # y la línea que la sigue, y sólo si la marca está.
+    # Ídem con el config de grub-btrfs.
+    if [ -f /etc/default/grub-btrfs/config ]; then
+        sed -i "\\|^$VSK_MARCA_ARRANQUE\$|,+1d" /etc/default/grub-btrfs/config
+    fi
+
     if [ -f /etc/apparmor/parser.conf ]; then
         sed -i "\\|^$VSK_MARCA_CACHE\$|,+1d" /etc/apparmor/parser.conf
     fi

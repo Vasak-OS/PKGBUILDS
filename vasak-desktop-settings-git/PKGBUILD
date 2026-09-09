@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=9
+pkgrel=10
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -47,6 +47,15 @@ depends=(
     # Los dos están en `extra`, no en el AUR.
     'snapper'
     'snap-pac'
+    # Pone cada instantánea en el menú de GRUB, que es lo que hace que volver
+    # atrás no dependa de tener a mano un medio de instalación. `grub-btrfsd`
+    # rehace el submenú cuando aparece o desaparece una, y para eso mira
+    # /.snapshots con inotify — de ahí `inotify-tools`, que grub-btrfs declara
+    # apenas como opcional y sin el cual el daemon arranca y no reacciona.
+    #
+    # Los dos están en `extra`, no en el AUR.
+    'grub-btrfs'
+    'inotify-tools'
     # `etc/skel/.gnupg/gpg-agent.conf` apunta a `/usr/bin/vasak-pinentry`, que
     # lo trae este paquete. Si faltara, `gpg-agent` no cae al pinentry de Arch:
     # falla el pedido de contraseña entero.
@@ -99,6 +108,10 @@ install="vasak-desktop-settings.install"
 # cada compilación — que es exactamente cuando importa.
 check() {
     cd "$srcdir/$pkgname"
+
+    # La copia del kernel para las instantáneas: se ejercita contra directorios
+    # temporales, sin tocar /boot ni necesitar btrfs.
+    ./pruebas/arranque.sh || return 1
 
     local vasak_apps gtk3 gtk4 esquema
     # La familia de `apps` en vasak.conf, sin comillas.
@@ -233,5 +246,7 @@ package() {
 
     chmod a+x $pkgdir/usr/bin/vasak-session
     chmod a+x $pkgdir/usr/lib/vasak/generar-pipewire-conf
+    chmod a+x $pkgdir/usr/lib/vasak/copiar-arranque
+    chmod a+x $pkgdir/usr/lib/vasak/restaurar-arranque
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
 }
