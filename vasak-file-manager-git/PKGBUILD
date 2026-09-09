@@ -13,6 +13,17 @@ depends=(
     'gdk-pixbuf2'
     'glib2'
     'gtk3'
+    # El backend de WebDAV de gvfs, que es con lo que se montan los discos en la
+    # nube de las cuentas en línea. En Arch viene en gvfs-dnssd y no en gvfs, que
+    # es la clase de cosa que se descubre cuando el montaje falla con «esquema no
+    # soportado» — verificado con `pacman -F`.
+    #
+    # Va acá y no en el metapaquete del escritorio, aunque los otros gvfs-* estén
+    # allá: es esta aplicación la que no anda sin él.
+    'gvfs-dnssd'
+    # Y el servicio que guarda las cuentas: sin él no hay discos que listar ni
+    # credenciales con las que montarlos.
+    'vasak-accounts'
     'hicolor-icon-theme'
     'libsoup3'
     'pango'
