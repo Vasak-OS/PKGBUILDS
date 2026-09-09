@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-accounts
-pkgver=0.2.1
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2) for VasakOS"
 arch=('x86_64')
@@ -9,7 +9,26 @@ url="https://github.com/Vasak-OS/$pkgname"
 license=('GPL3')
 # The permission service decides who may reach a token; the daemon refuses
 # every request without it.
-depends=('dbus' 'glibc' 'gcc-libs' 'vasak-permissions')
+depends=(
+    'dbus'
+    'glibc'
+    'gcc-libs'
+    # Decide quién puede llegar a un token; el servicio rechaza todo sin él.
+    'vasak-permissions'
+    # Quitar una cuenta pasa por polkit: se borra la credencial y se le avisa al
+    # proveedor, y eso no se deshace. Sin polkit el servicio no puede preguntar y
+    # el borrado falla.
+    'polkit'
+    # El almacén de certificados del sistema. Los dos binarios usan rustls y
+    # `rustls-native-certs`, que lee /etc/ssl/certs: sin eso no hay ni OAuth2 ni
+    # IMAP, porque no se puede verificar a nadie.
+    #
+    # Hoy llega igual, de arrastre por `pacman` → `curl`. Va declarado porque
+    # una dependencia que se cumple de casualidad es una que se rompe el día que
+    # esa cadena cambia, y el síntoma sería «el correo no sincroniza» sin nada
+    # que lo explique. No suma nada al disco: ya está instalado en todos lados.
+    'ca-certificates'
+)
 makedepends=('git' 'cargo' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
@@ -40,6 +59,7 @@ build() {
     unset CARGO_ENCODED_RUSTFLAGS
     export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
     export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    # Los dos binarios del workspace: el servicio de root y el de sesión.
     cargo build --release --locked
 }
 
@@ -48,16 +68,36 @@ package() {
 
     install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
 
+    # El sincronizador de correo, que corre **como la persona** y no como root.
+    #
+    # Es un binario aparte porque habla IMAP con servidores ajenos, y eso no
+    # puede vivir en un proceso de root. Le pide los tokens al servicio por
+    # D-Bus, pasando por la puerta de permisos como cualquier aplicación.
+    install -Dm755 "target/release/$pkgname-sync" "$pkgdir/usr/bin/$pkgname-sync"
+
+    # Unidad de **usuario**, en user/ y no system/: sin eso systemd la
+    # arrancaría como root y se perdería el único motivo de que exista.
+    install -Dm644 "sync/packaging/$pkgname-sync.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname-sync.service"
+    install -Dm644 "sync/packaging/ar.net.vasak.os.AccountsSync.service" \
+        "$pkgdir/usr/share/dbus-1/services/ar.net.vasak.os.AccountsSync.service"
+
     # A *system* service now: the tokens live in root-owned files, so the daemon
     # cannot run in the session where any program could replace it. The service
     # only accepts /usr/bin/vasak-accounts as a delegate when asking the
     # permission service on an application's behalf, so this path matters.
-    install -Dm644 "packaging/$pkgname.service" \
+    install -Dm644 "daemon/packaging/$pkgname.service" \
         "$pkgdir/usr/lib/systemd/system/$pkgname.service"
-    install -Dm644 "packaging/ar.net.vasak.os.AccountManager.service" \
+    install -Dm644 "daemon/packaging/ar.net.vasak.os.AccountManager.service" \
         "$pkgdir/usr/share/dbus-1/system-services/ar.net.vasak.os.AccountManager.service"
-    install -Dm644 "packaging/ar.net.vasak.os.AccountManager.conf" \
+    install -Dm644 "daemon/packaging/ar.net.vasak.os.AccountManager.conf" \
         "$pkgdir/usr/share/dbus-1/system.d/ar.net.vasak.os.AccountManager.conf"
+
+    # La acción de polkit para quitar una cuenta. Sin este archivo polkit no
+    # conoce la acción y la deniega por omisión, así que borrar dejaría de andar
+    # — que falla del lado seguro, pero falla.
+    install -Dm644 "daemon/packaging/ar.net.vasak.os.accounts.policy" \
+        "$pkgdir/usr/share/polkit-1/actions/ar.net.vasak.os.accounts.policy"
 
     # El catálogo de proveedores OAuth2.
     #
@@ -70,7 +110,7 @@ package() {
     # primera persona que quisiera agregar su client_id tendría que adivinar la
     # ruta que el mensaje de error le nombra.
     install -dm755 "$pkgdir/etc/vasak-accounts/providers.d"
-    for proveedor in packaging/providers.d/*.toml; do
+    for proveedor in daemon/packaging/providers.d/*.toml; do
         install -Dm644 "$proveedor" \
             "$pkgdir/usr/share/vasak-accounts/providers.d/$(basename "$proveedor")"
     done
