@@ -58,4 +58,20 @@ package() {
         "$pkgdir/usr/share/dbus-1/system-services/ar.net.vasak.os.AccountManager.service"
     install -Dm644 "packaging/ar.net.vasak.os.AccountManager.conf" \
         "$pkgdir/usr/share/dbus-1/system.d/ar.net.vasak.os.AccountManager.conf"
+
+    # El catálogo de proveedores OAuth2.
+    #
+    # Vienen **sin** client_id: VasakOS no distribuye uno propio porque
+    # registrarlo con Google cuesta una auditoría de seguridad paga y anual. Cada
+    # archivo explica adentro cómo poner el propio, que se deja en
+    # /etc/vasak-accounts/providers.d/ y le gana a éstos.
+    #
+    # Ese directorio lo crea el paquete aunque quede vacío: si no existiera, la
+    # primera persona que quisiera agregar su client_id tendría que adivinar la
+    # ruta que el mensaje de error le nombra.
+    install -dm755 "$pkgdir/etc/vasak-accounts/providers.d"
+    for proveedor in packaging/providers.d/*.toml; do
+        install -Dm644 "$proveedor" \
+            "$pkgdir/usr/share/vasak-accounts/providers.d/$(basename "$proveedor")"
+    done
 }
