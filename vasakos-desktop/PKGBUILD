@@ -78,12 +78,35 @@
 #     Y `git`, que es una herramienta de desarrollo: está en el complemento
 #     «desarrollo», que es donde se elige.
 #
-# Sumar un paquete al escritorio es editar `depends` acá y subir el `pkgrel`.
-# No hay que tocar ninguna de las dos listas.
+# Sumar un paquete al escritorio es editar `depends` acá y subir el Minor de
+# `pkgver`. No hay que tocar ninguna de las dos listas.
 
 pkgname=vasakos-desktop
-pkgver=1
-pkgrel=11
+# Major.Minor.Fix, y `pkgrel` en 1.
+#
+#   Major  cambia lo que **es** el escritorio: reemplazar el compositor, el
+#          gestor de sesión, algo que redefine el conjunto.
+#   Minor  entra o sale una aplicación o un componente de la lista. Es el caso
+#          normal, y es el de esta versión: entró `vasak-text`.
+#   Fix    la lista queda igual y hay que rehacer el paquete por otra cosa: una
+#          corrección en este archivo que no toque `depends`.
+#
+# **No se sube el `pkgrel`.** `pkgrel` existe para cuando el programa empaquetado
+# no cambió y sí cambió el empaquetado. Acá no hay programa: `depends` **es** el
+# contenido del paquete, así que cambiar la lista es una versión nueva.
+#
+# Este archivo indicaba lo contrario y se le hizo caso doce veces: quedó en
+# `pkgver=1` con el `pkgrel` en once, o sea once reempaquetados de un contenido
+# que en realidad cambió once veces. Funcionaba —pacman compara la versión con el
+# release y 1-11 es mayor que 1-10— pero el número no decía nada de lo que había
+# adentro.
+#
+# El once del Minor no arranca de cero a propósito: son las once revisiones que
+# ya existieron, y así ninguna versión publicada parece haber ido para atrás.
+# `vercmp 1-11 1.11.0-1` da -1, así que las máquinas con la anterior instalada
+# actualizan.
+pkgver=1.11.0
+pkgrel=1
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
 url="https://github.com/Vasak-OS"

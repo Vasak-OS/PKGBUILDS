@@ -534,6 +534,39 @@ else
 fi
 [[ $INSTALL -eq 1 ]] && MK_ARGS+=(-i)
 
+# Metapackages: built without a dependency check, always.
+#
+# A metapackage has no sources and no build step; its `depends` list *is* its
+# content, recorded as metadata. Nothing in it needs to be installed to produce
+# the package.
+#
+# Requiring the check makes it unbuildable, and not just out of order. makepkg
+# resolves dependencies against the *configured* repositories, and [vasakos] in
+# pacman.conf points at repo.vasak.net.ar -- the published repo, not this build
+# directory. So a package built one minute ago in the same run is still invisible
+# to makepkg until someone uploads it and rebuilds the database. Adding an
+# application to the desktop therefore broke the metapackage no matter where it
+# sat in the order: it asked for something that could not exist yet.
+#
+# The cost is that a typo in `depends` is no longer caught at build time; it
+# surfaces when someone installs the metapackage. Worth it against not being
+# able to build it at all.
+METAPAQUETES=(vasakos-desktop)
+
+argumentos_para() {
+  local name="$1" arg
+  for arg in "${METAPAQUETES[@]}"; do
+    if [[ "$name" == "$arg" ]]; then
+      # -d instead of -s: no dependency check, and therefore no pacman and no
+      # root. -f to overwrite, like the normal path.
+      printf '%s\n' -fd --noconfirm
+      [[ $INSTALL -eq 1 ]] && printf '%s\n' -i
+      return
+    fi
+  done
+  printf '%s\n' "${MK_ARGS[@]}"
+}
+
 # Lo que makepkg deja en el directorio del paquete, una vez que ya no sirve.
 #
 # Un directorio de PKGBUILD debería tener sólo archivos planos: PKGBUILD,
@@ -567,7 +600,8 @@ limpiar_trabajo() {
 for name in "${BUILD[@]+"${BUILD[@]}"}"; do
   echo "──────────────────────────────────────────────────────────────"
   echo "${CYAN}==> $name${OFF}"
-  if ( cd "$REPO_DIR/$name" && makepkg "${MK_ARGS[@]}" ); then
+  mapfile -t _mk_args < <(argumentos_para "$name")
+  if ( cd "$REPO_DIR/$name" && makepkg "${_mk_args[@]}" ); then
     OK+=("$name")
     _publicado=0
     [[ $USE_PACREPO -eq 1 ]] && { publish "$name"; _publicado=1; }
