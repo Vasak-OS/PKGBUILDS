@@ -87,7 +87,7 @@ pkgname=vasakos-desktop
 #   Major  cambia lo que **es** el escritorio: reemplazar el compositor, el
 #          gestor de sesión, algo que redefine el conjunto.
 #   Minor  entra o sale una aplicación o un componente de la lista. Es el caso
-#          normal, y es el de esta versión: entró `vasak-text`.
+#          normal, y es el de esta versión: entró `vasak-update`.
 #   Fix    la lista queda igual y hay que rehacer el paquete por otra cosa: una
 #          corrección en este archivo que no toque `depends`.
 #
@@ -105,7 +105,7 @@ pkgname=vasakos-desktop
 # ya existieron, y así ninguna versión publicada parece haber ido para atrás.
 # `vercmp 1-11 1.11.0-1` da -1, así que las máquinas con la anterior instalada
 # actualizan.
-pkgver=1.11.0
+pkgver=1.12.0
 pkgrel=1
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
@@ -261,6 +261,17 @@ depends=(
   vasakos-icon-theme
   vasakos-wallpapers
   vasak-settings
+
+  # Avisa cuando hay actualizaciones del sistema.
+  #
+  # Entra porque un sistema rolling que no se actualiza durante meses es la
+  # forma más segura de romperlo, y hasta ahora lo único que la documentación
+  # ofrecía era acordarse de abrir una terminal y escribir `pacman -Syu`.
+  #
+  # No aplica nada: sólo avisa y dice qué mirar antes —el espacio en `/boot`,
+  # si cambia el kernel, los `.pacnew` pendientes—. Aplicar va a ser de la
+  # tienda, porque el candado de pacman admite un solo dueño.
+  vasak-update
 
   # Servicio de energía del sistema. El indicador de batería del panel y la
   # página de Energía de la configuración hablan con él por D-Bus; el análisis

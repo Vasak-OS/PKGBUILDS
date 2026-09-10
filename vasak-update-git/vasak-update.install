@@ -1,0 +1,25 @@
+post_install() {
+    # Se enciende de fábrica: un sistema rolling que no se actualiza durante
+    # meses es la forma más segura de romperlo, y el aviso es lo único que
+    # hace que alguien se entere sin abrir una terminal.
+    #
+    # `enable` y no `enable --now`: esto también corre dentro del chroot del
+    # instalador, donde systemd no está atendiendo y `--now` fallaría
+    # llevándose el resto del script. El temporizador es `Persistent=true`,
+    # así que la primera comprobación se hace igual al iniciar sesión.
+    #
+    # Se puede apagar desde Configuración, o con
+    # `systemctl --user disable --now vasak-update.timer`.
+    systemctl --global enable vasak-update.timer 2>/dev/null || true
+
+    echo "  Aviso de actualizaciones activado: se comprueba una vez por día."
+    echo "  Para apagarlo: Configuración → Actualizaciones."
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    systemctl --global disable vasak-update.timer 2>/dev/null || true
+}

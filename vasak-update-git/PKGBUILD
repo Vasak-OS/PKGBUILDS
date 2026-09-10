@@ -1,0 +1,77 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-update
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Avisa cuando hay actualizaciones del sistema, y qué mirar antes de aplicarlas"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL3')
+depends=(
+    'glibc'
+    'gcc-libs'
+    # `checkupdates` y `pacdiff`. El primero es el único modo correcto de
+    # saber qué hay para actualizar sin tocar la base de pacman: copia la base
+    # a un temporal y sincroniza ahí, así que corre sin privilegios y no le
+    # deja al sistema una base a medio sincronizar.
+    'pacman-contrib'
+    # `notify-send`. El aviso sale por ahí en vez de hablar D-Bus desde el
+    # programa: traer un cliente de D-Bus para mandar un mensaje por día
+    # costaría más de un megabyte de binario y un ejecutor.
+    'libnotify'
+)
+makedepends=('git' 'cargo' 'rust')
+# `vasak-settings` muestra lo que este programa informa, y lo llama por
+# `--json`. No es al revés: se puede tener el aviso sin abrir la
+# configuración nunca.
+optdepends=('vasak-settings: para ver qué cambia desde el escritorio')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+options=('!lto')
+install="vasak-update.install"
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Un paquete no se compila para la máquina que lo compila.
+    #
+    # makepkg exporta RUSTFLAGS desde makepkg.conf, y en este equipo
+    # /etc/makepkg.conf.d/rust.conf pone `-C target-cpu=native`: el resultado
+    # anda ahí y muere con SIGILL en cualquier máquina más vieja.
+    #
+    # CARGO_ENCODED_RUSTFLAGS le gana a RUSTFLAGS en la precedencia de cargo,
+    # así que hay que sacarlo o poner RUSTFLAGS acá no haría nada.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    # `--locked` para que un candado desfasado corte la compilación en vez de
+    # resolverse solo y en silencio: dos compilaciones del mismo commit tienen
+    # que dar el mismo binario.
+    #
+    # El perfil de release del propio Cargo.toml elige tamaño sobre velocidad
+    # y `panic = "abort"`, que es lo que corresponde a un programa que corre
+    # una vez por día.
+    cargo build --release --locked
+}
+
+check() {
+    cd "$srcdir/$pkgname"
+    unset CARGO_ENCODED_RUSTFLAGS
+    cargo test --release --locked
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # Unidades de **usuario** y no de sistema, y no es un detalle: el aviso
+    # tiene que aparecer en la sesión de quien está usando el equipo, y el
+    # estado de qué se avisó ya es de cada persona. Como servicio de sistema
+    # no habría a quién avisarle.
+    install -Dm644 "packaging/$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+    install -Dm644 "packaging/$pkgname.timer" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.timer"
+
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.4.1
-pkgrel=3
+pkgver=0.7.0
+pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -27,6 +27,12 @@ depends=(
     # Sin ffmpeg eso no se puede hacer y el video se usa tal como está.
     'ffmpeg'
 )
+# La pantalla de Actualizaciones le pregunta a `vasak-update --json`; sin él
+# dice qué falta en vez de mostrarse vacía. Opcional y no dependencia: el
+# resto de la configuración funciona igual sin el aviso, y el metapaquete del
+# escritorio ya lo trae.
+optdepends=('vasak-update: para ver y configurar el aviso de actualizaciones')
+
 makedepends=(
     'git'
     'openssl'
