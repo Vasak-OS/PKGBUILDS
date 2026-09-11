@@ -174,25 +174,102 @@ pkg_name_of() {
   echo "${base%-*}"   # pkgver
 }
 
-# Packages other VasakOS packages depend on, built before the rest.
+# Orden de construcción: dependencias primero, sacado de los propios PKGBUILD.
 #
-# Alphabetical order is fine until one of ours needs another of ours: without
-# this, vasak-accounts is reached before vasak-permissions and makepkg cannot
-# resolve a dependency that has not been built yet.
-FIRST=(vasak-permissions)
+# Acá había una lista escrita a mano —`FIRST=(vasak-permissions)`— porque el
+# orden alfabético alcanzaba hasta que uno de los nuestros necesitó a otro de
+# los nuestros: `vasak-accounts` se construía antes que `vasak-permissions` y
+# makepkg no podía resolver una dependencia que todavía no existía.
+#
+# Una lista a mano de esto es una lista que queda vieja, y el día que queda
+# vieja lo dice una compilación fallida a los doce minutos. Pasó de nuevo en
+# cuanto `vasak-desktop-settings` pasó a depender de `vasak-wayfire-plugins`:
+# la `d` va antes que la `w`.
+#
+# Ahora el orden sale de `makepkg --printsrcinfo`, que resuelve las variables
+# del PKGBUILD —hay recetas con `pkgname=$_pkgname` y con paquetes partidos— y
+# lista las dependencias ya limpias. Cuesta medio segundo por receta, una vez,
+# al principio de una corrida que dura minutos.
+#
+# `tsort` hace el orden topológico. Si hubiera un ciclo lo dice y se cae al
+# orden alfabético de antes: un ciclo es un error que hay que arreglar, no algo
+# que este script deba adivinar.
+srcinfo_de() {
+  (cd "$REPO_DIR/$1" && makepkg --printsrcinfo 2>/dev/null)
+}
 
-# Collect candidate package dirs (those with a PKGBUILD), dependencies first.
-mapfile -t ALL < <(
+declare -A PKG_DE_DIR=()   # dir -> sus pkgname, separados por espacios
+declare -A DIR_DE_PKG=()   # pkgname -> dir
+declare -A DEPS_DE_DIR=()  # dir -> los pkgname que necesita, separados por espacios
+
+mapfile -t DIRS_CON_PKGBUILD < <(
   cd "$REPO_DIR" || exit
-  for d in */; do [[ -f "${d}PKGBUILD" ]] && echo "${d%/}"; done | sort |
-    awk -v first="${FIRST[*]}" '
-      BEGIN { split(first, f, " "); for (i in f) rank[f[i]] = 1 }
-      { if ($0 in rank) early[++e] = $0; else late[++l] = $0 }
-      END {
-        for (i = 1; i <= e; i++) print early[i]
-        for (i = 1; i <= l; i++) print late[i]
-      }'
+  for d in */; do [[ -f "${d}PKGBUILD" ]] && echo "${d%/}"; done | sort
 )
+
+for _dir in "${DIRS_CON_PKGBUILD[@]+"${DIRS_CON_PKGBUILD[@]}"}"; do
+  _info="$(srcinfo_de "$_dir")"
+  # Sin `.SRCINFO` no hay nada que ordenar para esta receta: queda donde la
+  # deje el alfabeto, que es lo que había antes.
+  [[ -n "$_info" ]] || continue
+
+  # Los nombres que produce. Un paquete partido produce varios.
+  _nombres="$(sed -n 's/^pkgname = //p' <<<"$_info" | tr '\n' ' ')"
+  PKG_DE_DIR["$_dir"]="$_nombres"
+  for _n in $_nombres; do DIR_DE_PKG["$_n"]="$_dir"; done
+
+  # Lo que necesita. `depends` y `makedepends`, sin la restricción de versión:
+  # para ordenar sólo importa el nombre. `checkdepends` también, porque el
+  # `check()` corre durante la construcción.
+  DEPS_DE_DIR["$_dir"]="$(
+    sed -n 's/^[[:space:]]*\(make\|check\)\?depends = //p' <<<"$_info" |
+      sed -E 's/[<>=].*$//' | sort -u | tr '\n' ' '
+  )"
+done
+
+# Los pares para `tsort`: «primero después». El par consigo mismo hace que un
+# paquete sin relaciones aparezca igual en la salida.
+orden_topologico() {
+  local dir dep destino
+  for dir in "${DIRS_CON_PKGBUILD[@]+"${DIRS_CON_PKGBUILD[@]}"}"; do
+    echo "$dir $dir"
+    for dep in ${DEPS_DE_DIR["$dir"]:-}; do
+      destino="${DIR_DE_PKG[$dep]:-}"
+      # Sólo las dependencias que salen de este repositorio. Las de Arch ya
+      # están instaladas o las baja pacman.
+      [[ -n "$destino" && "$destino" != "$dir" ]] && echo "$destino $dir"
+    done
+  done
+  # Explícito y no por descuido: el script corre con `pipefail`, y sin esto la
+  # función devuelve lo que haya dado el último `[[ ]]` del bucle. Una última
+  # dependencia que no sea de este repositorio —el caso corriente— la dejaría
+  # en 1, la tubería entera fallaría y el orden bueno se descartaría por un
+  # ciclo que no existe.
+  return 0
+}
+
+_CICLO="$(mktemp)"
+mapfile -t ALL < <(orden_topologico | tsort 2>"$_CICLO")
+if [[ -s "$_CICLO" ]]; then
+  # `tsort` igual imprime un orden completo cuando encuentra un ciclo, pero lo
+  # arma rompiéndolo por donde le toca. Se avisa y se usa: el ciclo es un error
+  # de las recetas que hay que arreglar, y callarlo lo deja escondido.
+  {
+    echo "${YELLOW}!! Las dependencias entre paquetes tienen un ciclo. El orden que sale de acá"
+    echo "   no es confiable; hay que arreglar las recetas.${OFF}"
+    sed 's/^/   /' "$_CICLO"
+  } >&2
+fi
+rm -f "$_CICLO"
+
+# `tsort` sólo imprime lo que le llegó en un par. Una receta sin `.SRCINFO`
+# —`makepkg` no pudo leerla— no entró al bucle de arriba y se perdería en
+# silencio, que es peor que construirla en el lugar equivocado.
+for _dir in "${DIRS_CON_PKGBUILD[@]+"${DIRS_CON_PKGBUILD[@]}"}"; do
+  _visto=0
+  for _y in "${ALL[@]+"${ALL[@]}"}"; do [[ "$_y" == "$_dir" ]] && _visto=1 && break; done
+  [[ "$_visto" -eq 0 ]] && ALL+=("$_dir")
+done
 
 # An explicitly named directory is built no matter what: it is how you force a
 # rebuild, so exclusion and twin-preference must not filter it out.
