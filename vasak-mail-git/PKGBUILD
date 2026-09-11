@@ -27,7 +27,14 @@ depends=(
     #
     # No hace falta nada más. Ni siquiera TLS: el que habla con el servidor es el
     # otro proceso. Verificado con readelf sobre el binario, no con ldd.
-    'vasak-accounts'
+    #
+    # El piso de versión es la firma de D-Bus. Desde 0.4.0, `ListMessages`,
+    # `GetMessage` y `MarkRead` reciben la casilla —los UID son por casilla, así
+    # que sin ella se pide cualquiera—. Una ventana nueva contra un servicio
+    # viejo llama con un argumento de más y el servicio la rechaza: la persona
+    # ve un error en lugar de su correo, y nada dice que lo que falta es
+    # actualizar el otro paquete.
+    'vasak-accounts>=0.4.0'
 )
 
 makedepends=(
