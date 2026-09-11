@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=11
+pkgrel=12
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -13,6 +13,13 @@ depends=(
     # compositor starts and the user is dropped straight back to the greeter.
     'uwsm'
     'wayfire'
+    # El wayfire.ini de este paquete lo enciende en `plugins`. Sin el paquete,
+    # Wayfire anota que no lo encuentra y sigue: el escritorio anda igual y
+    # nadie anota quién pide capturar la pantalla ni leer el portapapeles, que
+    # es justo la medición que hace falta antes de poder negar algo. Un aviso
+    # que no sale no se distingue de uno que no hacía falta, así que va como
+    # dependencia y no como sugerencia.
+    'vasak-wayfire-plugins'
     # Autostarted from wayfire.ini: no shell without it, so it is not optional.
     #
     # The version floor is the menu honouring XDG precedence: before 1.3.3 it
