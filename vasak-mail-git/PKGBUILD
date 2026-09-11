@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-mail
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Mail client for VasakOS: read the mail of your connected accounts."
 arch=('x86_64')
@@ -28,13 +28,18 @@ depends=(
     # No hace falta nada más. Ni siquiera TLS: el que habla con el servidor es el
     # otro proceso. Verificado con readelf sobre el binario, no con ldd.
     #
-    # El piso de versión es la firma de D-Bus. Desde 0.4.0, `ListMessages`,
-    # `GetMessage` y `MarkRead` reciben la casilla —los UID son por casilla, así
-    # que sin ella se pide cualquiera—. Una ventana nueva contra un servicio
-    # viejo llama con un argumento de más y el servicio la rechaza: la persona
-    # ve un error en lugar de su correo, y nada dice que lo que falta es
+    # El piso de versión es el contrato de D-Bus, y se sube cada vez que cambia.
+    #
+    #   0.4.0  `ListMessages`, `GetMessage` y `MarkRead` reciben la casilla —los
+    #          UID son por casilla, así que sin ella se pide cualquiera—.
+    #   0.5.0  `GetMessage` devuelve la lista de adjuntos donde antes había un
+    #          booleano.
+    #
+    # Sin el piso, una ventana nueva contra un servicio viejo llama con un
+    # argumento de más —o lee una lista donde hay un booleano— y lo que se ve es
+    # un error en lugar del correo, sin nada que diga que lo que falta es
     # actualizar el otro paquete.
-    'vasak-accounts>=0.4.0'
+    'vasak-accounts>=0.5.0'
 )
 
 makedepends=(
