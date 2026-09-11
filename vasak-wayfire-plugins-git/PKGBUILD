@@ -1,0 +1,63 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-wayfire-plugins
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Plugins de Wayfire de VasakOS"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL3')
+# `wayfire` y no sólo sus bibliotecas: el plugin se carga dentro del
+# compositor, o sea que sin él no tiene dónde vivir.
+#
+# La versión va acotada a la serie 0.11, y no sólo con un piso como hace
+# `wayfire-plugins-extra`. Wayfire comprueba la ABI al cargar cada plugin
+# —`getWayfireVersion()` contra `WAYFIRE_API_ABI_VERSION`— y uno compilado
+# contra otra ABI **no se carga**: el compositor arranca igual, el filtro no
+# corre y nada lo dice.
+#
+# La cota es una aproximación, no una garantía: el marcador de ABI es una fecha
+# dentro del encabezado (`WAYFIRE_API_ABI_VERSION_MACRO`) y no el número de
+# versión, así que en teoría puede cambiar dentro de la misma serie. Achica el
+# agujero; no lo cierra. Cerrarlo pide comparar la fecha al empaquetar, y eso
+# vale la pena el día que pase una vez.
+depends=(
+    'wayfire>=0.11.0'
+    'wayfire<0.12.0'
+    'wayland'
+    'glibc'
+    'gcc-libs'
+)
+makedepends=('git' 'meson' 'ninja' 'pkgconf')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "$srcdir/$pkgname"
+    # La versión del proyecto más la cuenta de commits: dos commits seguidos
+    # sin tocar `meson.build` tienen que dar versiones distintas o pacman no
+    # ve que hay algo nuevo.
+    local base
+    base=$(sed -n "s/.*version:[[:space:]]*'\([^']*\)'.*/\1/p" meson.build | head -1)
+    printf '%s.r%s.g%s' "${base:-0.0.0}" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    # `--wrap-mode=nodownload`: si faltara una dependencia, que falle acá y lo
+    # diga, en vez de bajarla de internet a mitad de la compilación.
+    arch-meson build --wrap-mode=nodownload
+    meson compile -C build
+}
+
+check() {
+    cd "$srcdir/$pkgname"
+    # Las pruebas no necesitan un compositor: la lógica que decide algo vive
+    # aparte de Wayland justamente para poder correrlas acá.
+    meson test -C build --print-errorlogs
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+    meson install -C build --destdir "$pkgdir"
+}
