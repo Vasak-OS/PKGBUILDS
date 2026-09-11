@@ -35,6 +35,11 @@ depends=(
     #   0.5.0  `GetMessage` devuelve la lista de adjuntos donde antes había un
     #          booleano.
     #
+    # Desde 0.6.0 el servicio avisa por sí mismo cuando llega correo, así que la
+    # ventana ya no es la única forma de enterarse. No cambia ninguna firma —el
+    # piso sigue en 0.5.0— pero sin esa versión el aviso con la ventana cerrada
+    # no existe.
+    #
     # Sin el piso, una ventana nueva contra un servicio viejo llama con un
     # argumento de más —o lee una lista donde hay un booleano— y lo que se ve es
     # un error en lugar del correo, sin nada que diga que lo que falta es
