@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-mail
-pkgver=0.9.0
+pkgver=0.10.0
 pkgrel=1
 pkgdesc="Mail client for VasakOS: read the mail of your connected accounts."
 arch=('x86_64')
@@ -44,6 +44,9 @@ depends=(
     #   0.9.0  El borrador lleva adjuntos y el servicio arma el multipart. Con
     #          una versión anterior los archivos elegidos viajan y se descartan
     #          en silencio: sale el mensaje sin lo que se quiso adjuntar.
+    #  0.10.0  `GetAttachment`, que es de donde salen los bytes de un adjunto
+    #          recibido, y el aviso de si llegó cortado. Sin esa versión el
+    #          botón de guardar no tiene a quién pedirle el archivo.
     #
     # En 0.6.0 el servicio pasó a avisar por sí mismo cuando llega correo. No
     # cambió ninguna firma, así que por sí sola no mueve el piso — pero sin esa
@@ -53,7 +56,7 @@ depends=(
     # argumento de más —o lee una lista donde hay un booleano— y lo que se ve es
     # un error en lugar del correo, sin nada que diga que lo que falta es
     # actualizar el otro paquete.
-    'vasak-accounts>=0.9.0'
+    'vasak-accounts>=0.10.0'
 )
 
 makedepends=(
