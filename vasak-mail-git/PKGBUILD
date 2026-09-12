@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-mail
-pkgver=0.10.0
+pkgver=0.11.0
 pkgrel=1
 pkgdesc="Mail client for VasakOS: read the mail of your connected accounts."
 arch=('x86_64')
@@ -47,6 +47,11 @@ depends=(
     #  0.10.0  `GetAttachment`, que es de donde salen los bytes de un adjunto
     #          recibido, y el aviso de si llegó cortado. Sin esa versión el
     #          botón de guardar no tiene a quién pedirle el archivo.
+    #
+    # Desde 0.11.0 el servicio lee las preferencias que escribe esta ventana.
+    # No cambia ninguna firma —el archivo es el contrato— así que no mueve el
+    # piso: con un servicio anterior el selector del cartel se puede usar y no
+    # tiene efecto, que es lo mismo que pasaba antes de que existiera.
     #
     # En 0.6.0 el servicio pasó a avisar por sí mismo cuando llega correo. No
     # cambió ninguna firma, así que por sí sola no mueve el piso — pero sin esa
