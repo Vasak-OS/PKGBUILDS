@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-mail
-pkgver=0.6.0
+pkgver=0.7.0
 pkgrel=1
 pkgdesc="Mail client for VasakOS: read the mail of your connected accounts."
 arch=('x86_64')
@@ -37,6 +37,10 @@ depends=(
     #   0.7.0  `SearchMessages`, que es a quien le pregunta el botón de buscar
     #          en el servidor. Sin esa versión el método no existe y la búsqueda
     #          que va más allá de lo que está en la ventana falla.
+    #   0.8.0  `SendMessage` recibe la hora a partir de la cual puede salir. Es
+    #          lo que sostiene los diez segundos para arrepentirse: sin ese
+    #          argumento el mensaje sale en el acto y el botón de deshacer no
+    #          llega a nada.
     #
     # En 0.6.0 el servicio pasó a avisar por sí mismo cuando llega correo. No
     # cambió ninguna firma, así que por sí sola no mueve el piso — pero sin esa
@@ -46,7 +50,7 @@ depends=(
     # argumento de más —o lee una lista donde hay un booleano— y lo que se ve es
     # un error en lugar del correo, sin nada que diga que lo que falta es
     # actualizar el otro paquete.
-    'vasak-accounts>=0.7.0'
+    'vasak-accounts>=0.8.0'
 )
 
 makedepends=(
