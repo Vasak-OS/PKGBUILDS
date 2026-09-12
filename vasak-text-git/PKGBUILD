@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-text
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="Text editor for Vasak OS: tabs, syntax highlighting and atomic saves."
 arch=('x86_64')
