@@ -122,4 +122,11 @@ package() {
     install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
     install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
         "${pkgdir}/usr/share/${pkgname}/locales/"
+
+    # La entrada del menú. El bundle de tauri genera una propia, pero la del
+    # repositorio es la que lleva `StartupWMClass` con el identificador —lo que
+    # deja al escritorio unir el lanzador con la ventana abierta— y los textos en
+    # español. Se instala después de copiar el bundle, así que pisa a la otra.
+    install -Dm644 "$srcdir/$pkgname/src-tauri/packaging/${pkgname}.desktop" \
+        "${pkgdir}/usr/share/applications/${pkgname}.desktop"
 }
