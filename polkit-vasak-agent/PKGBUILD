@@ -2,7 +2,7 @@
 
 pkgname=polkit-vasak-agent
 pkgver=0.2.0
-pkgrel=4
+pkgrel=5
 pkgdesc="Agente de autenticación PolicyKit para VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/polkit-vasak"
@@ -15,7 +15,11 @@ depends=(
     'desktop-file-utils'
     'hicolor-icon-theme'
     'pam'
+    # Con lo que se abren y se montan los discos cifrados: el agente le habla por
+    # el bus del sistema. Ver la sección «Discos cifrados» del README.
+    'udisks2'
 )
+optdepends=('vasak-keyring: para recordar la frase de paso de un disco cifrado')
 makedepends=(
     'git'
     'openssl'

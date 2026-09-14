@@ -2,7 +2,7 @@
 
 pkgname=vasak-file-manager
 pkgver=0.8.0
-pkgrel=1
+pkgrel=2
 pkgdesc="File manager for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -40,7 +40,13 @@ depends=(
     'tar'
     'dbus'
     'wayland'
+    # Con lo que se montan y desmontan las unidades. Se usaba desde siempre —el
+    # montaje llamaba a `udisksctl`— y no figuraba: en un sistema sin él, hacer
+    # clic en un pendrive no hacía nada. Ahora el montaje va por el bus, contra
+    # el mismo servicio.
+    'udisks2'
 )
+optdepends=('polkit-vasak-agent: para abrir discos cifrados y autorizar el montaje de particiones internas')
 makedepends=(
     'git'
     'pkgconf'
