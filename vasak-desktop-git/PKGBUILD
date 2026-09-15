@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop
-pkgver=1.4.2
+pkgver=1.4.3
 pkgrel=1
 pkgdesc="Desktop for VasakOS"
 arch=('x86_64')
@@ -106,4 +106,22 @@ package() {
     install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
     install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
         "${pkgdir}/usr/share/${pkgname}/locales/"
+
+    # La unidad de usuario del escritorio.
+    #
+    # Va en **este** paquete, junto al binario que sabe mandar el `READY=1`. Si
+    # viajara con `vasak-desktop-settings`, una actualización parcial dejaría un
+    # `Type=notify` apuntando a un binario que no avisa: treinta y cinco
+    # segundos de espera y después ningún escritorio.
+    install -Dm644 "$srcdir/$pkgname/packaging/systemd/user/vasak-desktop.service" \
+        "${pkgdir}/usr/lib/systemd/user/vasak-desktop.service"
+
+    # El enlace de habilitación, hecho a mano y no copiado.
+    #
+    # `[Install]` sólo hace efecto al correr `systemctl enable`, y a un paquete
+    # nadie se lo corre. Sin este enlace la unidad queda instalada y no arranca
+    # nunca — o sea, ningún escritorio.
+    install -dm755 "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants"
+    ln -sf ../vasak-desktop.service \
+        "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants/vasak-desktop.service"
 }

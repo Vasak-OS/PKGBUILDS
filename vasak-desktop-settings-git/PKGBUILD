@@ -26,7 +26,11 @@ depends=(
     # read ~/.local/share/applications last and kept the first entry per file
     # name, so the uuctl override this package ships in /etc/skel would sit
     # there doing nothing.
-    'vasak-desktop>=1.3.3'
+    # 1.4.3 es la versión que trae `vasak-desktop.service`. Desde que
+    # `wayfire.ini` dejó de lanzar el escritorio en su `[autostart]`, esa unidad
+    # es lo único que lo arranca: con un `vasak-desktop` anterior, quien
+    # actualice este paquete se queda sin escritorio.
+    'vasak-desktop>=1.4.3'
     # Replaces polkit-gnome, which VasakOS no longer ships.
     'polkit-vasak-agent'
     'vasakos-icon-theme'
