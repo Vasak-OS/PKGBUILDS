@@ -17,7 +17,18 @@ arch=('x86_64')
 url="https://github.com/roddhjav/apparmor.d"
 license=('GPL-2.0-only')
 depends=('apparmor>=4.1.3' 'apparmor<5.0.0')
-makedepends=('go' 'git' 'just')
+# Sin `git`, pero recién después de apagar el estampado de VCS.
+#
+# Nada de lo que este paquete construye lo usa: la fuente es un tarball, en el
+# `Justfile` `git` sólo aparece en los objetivos de publicar una release, y en
+# el código Go sólo en archivos `_test.go`. Y sin embargo hacía falta, porque lo
+# llamaba `go build` para estampar el commit del repositorio que envuelve al
+# directorio de trabajo. Ver `-buildvcs=false` en build().
+#
+# Comprobado construyendo el paquete entero con un `git` falso al frente del
+# PATH que falla si alguien lo llama: sin la bandera el build corta, con la
+# bandera termina y el `git` falso nunca se ejecuta.
+makedepends=('go' 'just')
 source=("https://github.com/roddhjav/$pkgbase/releases/download/v$pkgver/$pkgbase-$pkgver.tar.gz")
 # Comprobada a mano contra el tarball publicado, no copiada del PKGBUILD ajeno.
 sha512sums=('a0a8fcfc97bad1bad5d8bbdd708d41e2a596a4c719dabf883981d43bf485be2ab841f926a898c03dd3aefde7ecdb1055907f65559023bdbb44d41fb4504cf479')
@@ -43,7 +54,19 @@ build() {
   export CGO_CXXFLAGS="${CXXFLAGS}"
   export CGO_LDFLAGS="${LDFLAGS}"
   export GOPATH="${srcdir}"
-  export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
+  # `-buildvcs=false` porque si no el paquete depende de dónde esté parado.
+  #
+  # `go build` estampa en el binario el commit del repositorio git que lo
+  # contenga, y acá el que lo contiene es **PKGBUILDS**: los binarios salían con
+  # `vcs.revision` apuntando a un commit de nuestras recetas, que no tiene nada
+  # que ver con apparmor.d. O sea que el mismo pkgver daba binarios distintos
+  # según desde qué commit de PKGBUILDS se lo construyera, y otro distinto más
+  # si se lo construía fuera de un checkout.
+  #
+  # De paso es lo que hace que `git` no sea necesario para construir esto: es lo
+  # único que lo llamaba, y sin la bandera el build falla con «error obtaining
+  # VCS status» si git no está.
+  export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw -buildvcs=false"
   export DISTRIBUTION=arch
   just prebuild
 

@@ -1,8 +1,8 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=lsb-release
-pkgver=2.0.r48.3cf5103
-_commit=3cf51039933d03ef15388b75d30baa5d5e09a1a0
+pkgver=2.0.r55.a25a4fc
+_commit=a25a4fcd73c79bd5af0dd8d948a7c96dcbfd2d07
 pkgrel=1
 pkgdesc="LSB version query program"
 arch=('any')
@@ -19,7 +19,7 @@ source=(
 sha512sums=(
     'SKIP'
     'SKIP'
-    'fb5a08408f7e3c6f2b2f04bb3d3a7dc7a23aff16c13b4e8359a814c0234bc13263ba4c9c819e8f5f9721d8f303815de5d1ccc84fbcbdf9cbba1eab279a7be831'
+    '1212ac66a220caac14ccbf6a3c2e9d6298aae8b2171ebf580f73d08ea6afbc7c94897ce6e8c9891ff8906fe98c2506eca33c03eda074211fd7c6541b8f2648e5'
     'cf62c753ba42961136da606505dc53f69bfc1d3d963e982b84fe4cfea68ceef4954965797b95501dff1b17be78c070e927f9fb524c4aa530214a84aba2518ecb'
 )
 
@@ -28,6 +28,16 @@ pkgver() {
     printf "%s.r%s.%s" "$(grep -Po 'SCRIPTVERSION="\K[^"]*' lsb_release)" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
+# El parche de la descripción sigue haciendo falta.
+#
+# `/etc/lsb-release` —que instala este mismo paquete— define
+# DISTRIB_DESCRIPTION="VasakOS". Sin el parche, cuando el archivo del que
+# upstream lee la descripción está vacío, el script pisa ese valor con «n/a» en
+# vez de quedarse con el que ya tenía, y `lsb_release -d` deja de decir VasakOS.
+#
+# Se regeneró contra este commit: contra el anterior aplicaba con fuzz —el
+# contexto se había corrido treinta y siete líneas— y un parche con fuzz es uno
+# que puede entrar en el lugar equivocado sin avisar.
 prepare() {
     cd lsb-samples/lsb_release/src
     patch -Np0 -i "$srcdir/lsb_release_description.patch"

@@ -1,6 +1,6 @@
---- lsb_release.orig	2012-11-13 05:12:02.000000000 -0800
-+++ lsb_release	2013-11-24 17:13:55.943608718 -0800
-@@ -216,7 +216,7 @@
+--- lsb_release.orig
++++ lsb_release
+@@ -253,7 +253,7 @@
              TMP_DISTRIB_DESC=$DISTRIB_DESCRIPTION
          fi
  
