@@ -124,10 +124,20 @@ scan_package() {
 
   local reported=0
   while IFS= read -r -d '' file; do
-    # `file` would be clearer but adds a dependency. The magic is read as hex
-    # because comparing raw bytes in a command substitution trips over the NUL
-    # that ELF's fourth byte is not, but the ones after it are.
-    [[ "$(od -An -tx1 -N4 "$file" 2>/dev/null | tr -d ' \n')" == "7f454c46" ]] || continue
+    # ¿Es un ELF? Con el builtin de bash, sin lanzar un proceso.
+    #
+    # Acá había un `od` por archivo, y esta pregunta se le hace a **todos** los
+    # archivos de **todos** los paquetes. Lo pagaba sobre todo quien no tiene un
+    # solo binario: `vasakos-icon-theme` tardaba 64,8 segundos —cuatro veces más
+    # que cualquier otro paquete— lanzando un `od` por cada icono.
+    #
+    # `read -N 4` lee exactamente cuatro bytes. Los de la firma ELF son
+    # 7f 45 4c 46 y ninguno es NUL, así que bash los puede sostener en una
+    # variable; era el NUL de los bytes siguientes lo que obligaba al hex.
+    # Comprobado contra la versión con `od` sobre 400 archivos de /usr/bin y
+    # /usr/share/icons: mismo veredicto en todos, 39 veces más rápido.
+    LC_ALL=C IFS= read -r -N 4 _magia < "$file" 2>/dev/null || continue
+    [[ "$_magia" == $'\x7fELF' ]] || continue
 
     local hits bloques ancho control
     read -r hits bloques ancho control < <(measure_file "$file")
@@ -158,6 +168,18 @@ scan_package() {
   return $bad
 }
 
+# Modo interno: un solo paquete, para que el bucle de abajo pueda repartirlos.
+#
+# Se reinvoca el script en vez de exportar `scan_package` con `export -f`: la
+# función usa media docena de variables de arriba —el patrón vectorial, los
+# umbrales, el programa de gawk— y exportarlas de a una es la clase de lista que
+# queda vieja sin avisar. Arrancar bash de nuevo cuesta milisegundos contra los
+# segundos que tarda desensamblar un paquete.
+if [[ "${1:-}" == "--un-paquete" ]]; then
+  scan_package "$2"
+  exit $?
+fi
+
 TARGETS=()
 if [[ $# -eq 0 ]]; then
   [[ -d "$DEFAULT_REPO" ]] || { echo "No existe $DEFAULT_REPO" >&2; exit 1; }
@@ -182,9 +204,36 @@ fi
 
 echo "${CYAN}==> Revisando ${#TARGETS[@]} paquete(s) para x86-64 base${OFF}"
 
+# Los paquetes se revisan en paralelo.
+#
+# Es el paso más caro de toda la publicación: desensambla cada ELF de cada
+# paquete, y medido sobre los 34 del repositorio tardaba **274 segundos** en
+# serie. No hay nada que compartir entre paquetes —cada uno se extrae en su
+# propio directorio temporal y se mira solo—, así que el orden no importa para
+# el resultado; sí para lo que se lee, y por eso la salida se guarda por
+# paquete y se imprime después en el orden original.
+PARALELO="${PORTABILIDAD_PARALELO:-$(nproc 2>/dev/null || echo 4)}"
+SALIDAS="$(mktemp -d)"
+trap 'rm -rf "$SALIDAS"' EXIT
+
+for i in "${!TARGETS[@]}"; do
+  printf '%s\0%s\0' "$i" "${TARGETS[$i]}"
+done | xargs -0 -P "$PARALELO" -n 2 sh -c '
+  # $0 es este script, $1 el directorio de salidas; xargs agrega índice y
+  # paquete al final.
+  "$0" --un-paquete "$3" >"$1/$2.salida" 2>&1
+  echo $? >"$1/$2.estado"
+' "$REPO_DIR/check-portability.sh" "$SALIDAS"
+
 FAILED=()
-for pkg in "${TARGETS[@]}"; do
-  scan_package "$pkg" || FAILED+=("${pkg##*/}")
+for i in "${!TARGETS[@]}"; do
+  [[ -s "$SALIDAS/$i.salida" ]] && cat "$SALIDAS/$i.salida"
+  # Sin archivo de estado el trabajador no llegó a terminar —lo mató algo—, y
+  # eso cuenta como no revisado, que acá es lo mismo que no portable: lo que no
+  # se pudo comprobar no se firma.
+  if [[ "$(cat "$SALIDAS/$i.estado" 2>/dev/null || echo 1)" != "0" ]]; then
+    FAILED+=("${TARGETS[$i]##*/}")
+  fi
 done
 
 echo

@@ -79,6 +79,11 @@ set -uo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE="$(cd "$REPO_DIR/.." && pwd)"
 
+# El `.SRCINFO` de cada receta: una vez, en paralelo y recordado entre corridas.
+# Ver lib/srcinfo.sh — saber qué reconstruir pasó de 174 segundos a menos de uno.
+# shellcheck source=lib/srcinfo.sh
+source "$REPO_DIR/lib/srcinfo.sh"
+
 # Nada queda afuera por omisión: lo que el ISO pide en packages.x86_64 se
 # compila. Dejar algo afuera de forma permanente significa armar la imagen con
 # lo que hubiera quedado de una compilación anterior —o con nada—, y eso no se
@@ -194,9 +199,8 @@ pkg_name_of() {
 # `tsort` hace el orden topológico. Si hubiera un ciclo lo dice y se cae al
 # orden alfabético de antes: un ciclo es un error que hay que arreglar, no algo
 # que este script deba adivinar.
-srcinfo_de() {
-  (cd "$REPO_DIR/$1" && makepkg --printsrcinfo 2>/dev/null)
-}
+# `srcinfo_de` y `srcinfo_paquetes` salen de lib/srcinfo.sh y toman la ruta del
+# directorio, no su nombre.
 
 declare -A PKG_DE_DIR=()   # dir -> sus pkgname, separados por espacios
 declare -A DIR_DE_PKG=()   # pkgname -> dir
@@ -207,8 +211,16 @@ mapfile -t DIRS_CON_PKGBUILD < <(
   for d in */; do [[ -f "${d}PKGBUILD" ]] && echo "${d%/}"; done | sort
 )
 
+# Todas juntas antes del bucle: es el paso que antes costaba un segundo por
+# receta, en serie, y ahora cuesta una vez y sólo por lo que cambió.
+_RUTAS_DE_RECETAS=()
 for _dir in "${DIRS_CON_PKGBUILD[@]+"${DIRS_CON_PKGBUILD[@]}"}"; do
-  _info="$(srcinfo_de "$_dir")"
+  _RUTAS_DE_RECETAS+=("$REPO_DIR/$_dir")
+done
+[[ ${#_RUTAS_DE_RECETAS[@]} -gt 0 ]] && srcinfo_precalentar "${_RUTAS_DE_RECETAS[@]}"
+
+for _dir in "${DIRS_CON_PKGBUILD[@]+"${DIRS_CON_PKGBUILD[@]}"}"; do
+  _info="$(srcinfo_de "$REPO_DIR/$_dir")"
   # Sin `.SRCINFO` no hay nada que ordenar para esta receta: queda donde la
   # deje el alfabeto, que es lo que había antes.
   [[ -n "$_info" ]] || continue
@@ -405,10 +417,20 @@ for name in "${TARGETS[@]}"; do
   if [[ $REFRESH_VCS -eq 1 ]] && grep -qE '^[[:space:]]*pkgver[[:space:]]*\(\)' "$dir/PKGBUILD"; then
     printf '  %-30s %s\n' "$name" "${DIM}refreshing pkgver from upstream…${OFF}"
     (cd "$dir" && makepkg -o --nodeps --noconfirm >/dev/null 2>&1) || true
+    # `makepkg -o` acaba de reescribir el `pkgver=` del PKGBUILD, así que lo
+    # recordado de esta receta ya no corresponde.
+    srcinfo_olvidar "$dir"
   fi
 
-  # Debug packages are a by-product of makepkg's OPTIONS, never published.
-  mapfile -t files < <(cd "$dir" && makepkg --packagelist 2>/dev/null | grep -v -- '-debug-')
+  # Los nombres salen del `.SRCINFO` que ya se leyó, no de una segunda
+  # invocación de `makepkg`. Era la mitad del costo de averiguar qué hay que
+  # construir: una llamada más por receta, en serie, para obtener algo que el
+  # `.SRCINFO` ya dice. `pruebas/nombres-de-paquete.sh` compara las dos salidas
+  # receta por receta.
+  #
+  # Los paquetes de depuración no aparecen acá —el `.SRCINFO` no los nombra—,
+  # que es justamente lo que el `grep -v -- '-debug-'` de antes buscaba.
+  mapfile -t files < <(srcinfo_paquetes "$dir")
   if [[ ${#files[@]} -eq 0 ]]; then
     printf '  %-30s %s\n' "$name" "${RED}PKGBUILD does not parse${OFF}"
     BROKEN+=("$name")

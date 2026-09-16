@@ -18,6 +18,11 @@
 set -uo pipefail
 
 cd "$(dirname "$0")/.." || exit 1
+REPO_DIR="$PWD"
+# Las recetas se leen con la caché compartida: sin ella esta prueba tardaba un
+# minuto leyendo lo mismo que build-all.sh acababa de leer.
+# shellcheck source=../lib/srcinfo.sh
+source "$REPO_DIR/lib/srcinfo.sh"
 
 fallos=0
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$1"; }
@@ -29,10 +34,11 @@ declare -A DIR_DE_PKG=()
 declare -A DEPS_DE_DIR=()
 dirs=()
 
-for d in */; do
-    d=${d%/}
-    [ -f "$d/PKGBUILD" ] || continue
-    info=$(cd "$d" && makepkg --printsrcinfo 2>/dev/null)
+mapfile -t _recetas < <(for d in */; do [ -f "${d}PKGBUILD" ] && echo "${d%/}"; done)
+srcinfo_precalentar "${_recetas[@]/#/$REPO_DIR/}"
+
+for d in "${_recetas[@]}"; do
+    info=$(srcinfo_de "$REPO_DIR/$d")
     if [ -z "$info" ]; then
         mal "$d: makepkg no pudo leer el PKGBUILD"
         continue
