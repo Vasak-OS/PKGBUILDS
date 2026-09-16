@@ -111,7 +111,7 @@ measure_file() {
 ANCHO_MAX=$((256 * 1024))
 CONTROL_MAX=$((128 * 1024))
 
-scan_package() {
+escanear_de_verdad() {
   local pkg="$1" name work bad=0
   name="${pkg##*/}"
 
@@ -166,6 +166,60 @@ scan_package() {
 
   rm -rf "$work"
   return $bad
+}
+
+# ── El veredicto se recuerda ──────────────────────────────────────────────────
+#
+# Revisar un paquete es caro —desensambla cada ELF que tiene adentro— y el
+# resultado depende de una sola cosa: los bytes del paquete. Un `.pkg.tar.zst`
+# no cambia nunca después de construido; si cambió, es otro archivo. Así que
+# volver a revisar los treinta y cuatro cuando sólo dos son nuevos es trabajo
+# tirado, y era la mayor parte de los 49 segundos que tardaba.
+#
+# La clave lleva también el hash de **este script**: el veredicto no depende
+# sólo del paquete sino de con qué se lo miró, y un detector mejorado tiene que
+# volver a mirar todo en vez de creerle a lo que dijo el anterior.
+#
+# No hay forma de que quede vieja: si cualquiera de los dos cambia, la clave es
+# otra y no hay entrada. Por eso no hace falta una bandera para saltearla.
+PORTABILIDAD_CACHE="${PORTABILIDAD_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/vasakos-pkgbuilds/portabilidad}"
+
+_hash_del_script() {
+  if [[ -z "${_HASH_SCRIPT:-}" ]]; then
+    _HASH_SCRIPT="$(sha256sum <"$REPO_DIR/check-portability.sh" 2>/dev/null | cut -c1-12)"
+  fi
+  printf '%s' "${_HASH_SCRIPT:-sin-hash}"
+}
+
+scan_package() {
+  local pkg="$1" hash ruta estado salida
+
+  hash="$(sha256sum <"$pkg" 2>/dev/null | cut -c1-32)"
+  if [[ -z "$hash" ]]; then
+    # Sin hash no hay caché posible, pero el paquete igual hay que revisarlo:
+    # no poder recordarlo no es razón para no mirarlo.
+    escanear_de_verdad "$pkg"
+    return $?
+  fi
+
+  ruta="$PORTABILIDAD_CACHE/$hash-$(_hash_del_script).veredicto"
+  if [[ -s "$ruta" ]]; then
+    # La primera línea es el estado; el resto, lo que se había impreso.
+    estado="$(head -n 1 "$ruta")"
+    tail -n +2 "$ruta"
+    return "${estado:-1}"
+  fi
+
+  salida="$(escanear_de_verdad "$pkg" 2>&1)"
+  estado=$?
+  printf '%s\n' "$salida"
+
+  # Se escribe a un temporal y se mueve: una corrida cortada a la mitad tiene
+  # que dejar un veredicto entero o ninguno, nunca medio.
+  mkdir -p "$PORTABILIDAD_CACHE" 2>/dev/null || return $estado
+  { printf '%s\n' "$estado"; printf '%s\n' "$salida"; } >"$ruta.$$" 2>/dev/null &&
+    mv -f "$ruta.$$" "$ruta" 2>/dev/null || rm -f "$ruta.$$"
+  return $estado
 }
 
 # Modo interno: un solo paquete, para que el bucle de abajo pueda repartirlos.
