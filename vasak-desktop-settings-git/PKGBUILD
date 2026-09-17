@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=18
+pkgrel=19
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -101,6 +101,16 @@ depends=(
     'pipewire'
     'webkit2gtk-4.1'
 )
+# /etc/os-release no lo posee ningún paquete —`filesystem` trae
+# /usr/lib/os-release y nada más—, así que la ruta está libre y este paquete la
+# puede tomar. Declararla como backup no es porque sea configuración que alguien
+# edite: es lo único que permite instalarla en un equipo donde el archivo **ya
+# existe sin dueño**, que es el de cualquiera que le haya puesto VasakOS encima a
+# otra distribución. Medido: sin `backup`, pacman corta la transacción entera con
+# «exists in filesystem» y no instala nada; con `backup`, toma la ruta, deja el
+# archivo viejo y pone el nuestro al lado como `.pacnew`. Ese `.pacnew` lo
+# resuelve el `.install`, que es donde está explicado con qué regla.
+backup=('etc/os-release')
 source=("git+${url}.git")
 sha256sums=('SKIP')
 install="vasak-desktop-settings.install"
@@ -132,6 +142,13 @@ check() {
     # ignorados esté, que el tope del diario le gane al de cachyos-settings, y
     # —lo que más importa— que este PKGBUILD los instale. Corre contra sí mismo.
     VSK_PKGBUILD="$startdir/PKGBUILD" ./pruebas/apparmor-ruido-fuera-del-diario.sh || return 1
+
+    # Que el sistema sepa decir quién es: que os-release esté bien escrito, que
+    # la versión sea la misma en los dos lugares que la dicen, que **este**
+    # PKGBUILD los instale, y que la toma de /etc/os-release resuelva su
+    # `.pacnew` en un equipo que venía de otra distribución.
+    VSK_PKGBUILD="$startdir/PKGBUILD" VSK_INSTALL="$startdir/$install" \
+        ./pruebas/identidad-del-sistema.sh || return 1
 
     local vasak_apps gtk3 gtk4 esquema
     # La familia de `apps` en vasak.conf, sin comillas.
@@ -223,11 +240,31 @@ package() {
     # sistema instalado —el plugin del instalador venía avisando «el menú de
     # arranque va a decir Arch» en cada instalación—.
     #
-    # Se instalan uno por uno y no con un `cp -r etc/`: el repo tiene también un
-    # `etc/os-release`, y ese archivo lo posee el paquete `filesystem`.
-    # Copiarlo sería un conflicto que hace fallar el pacstrap.
+    # Se instalan uno por uno y no con un `cp -r etc/` porque `etc/skel` necesita
+    # su propio trato más arriba —los modos que git no guarda— y porque así se ve
+    # archivo por archivo qué llega al equipo y qué no.
     install -Dm644 "$srcdir/$pkgname/etc/default/grub.d/10-vasakos.cfg" \
         "$pkgdir/etc/default/grub.d/10-vasakos.cfg"
+
+    # Quién es este sistema.
+    #
+    # El archivo estaba escrito en el repositorio y no se instalaba, así que un
+    # VasakOS instalado decía «Arch Linux» en `fastfetch`, en los reportes de bugs
+    # y en el nombre que los navegadores informan. No se arreglaba solo desde la
+    # ISO: el destino se arma con `pacstrap`, no copiando el squashfs del medio
+    # live, así que lo único que llegaba era el os-release de `filesystem`.
+    #
+    # Acá estuvo además el comentario que impidió arreglarlo antes: decía que
+    # /etc/os-release lo poseía `filesystem` y que copiarlo haría fallar el
+    # pacstrap. `pacman -Ql filesystem` lista /usr/lib/os-release y ninguno más.
+    install -Dm644 "$srcdir/$pkgname/etc/os-release" "$pkgdir/etc/os-release"
+
+    # Y la versión de la publicación, que es el archivo que los documentos de
+    # reporte de bugs le piden a la gente que muestre. Existe en el repositorio
+    # desde 2023 y tampoco se instalaba: `cat /etc/vasakos/vasakos-release`
+    # contestaba «No existe el fichero o el directorio» en todos los equipos.
+    install -Dm644 "$srcdir/$pkgname/etc/vasakos/vasakos-release" \
+        "$pkgdir/etc/vasakos/vasakos-release"
 
     # Los perfiles de AppArmor que sí se instalan.
     #

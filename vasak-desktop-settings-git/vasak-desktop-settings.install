@@ -4,6 +4,35 @@ VSK_MARCA_CACHE='# VasakOS: caché de política compilada de AppArmor'
 VSK_MARCA_ARRANQUE='# VasakOS: el kernel de cada instantánea'
 
 post_install() {
+    # Quién dice ser este sistema, en un equipo donde /etc/os-release ya estaba.
+    #
+    # El paquete es dueño de /etc/os-release y lo declara en `backup=()`. Eso es
+    # lo único que deja instalarlo donde el archivo ya existe **sin dueño** —el
+    # que le puso VasakOS encima a otra distribución—: sin `backup`, pacman corta
+    # la transacción entera con «exists in filesystem», y no hay scriptlet que lo
+    # evite porque el conflicto de archivos se mira antes de correr ninguno.
+    #
+    # El precio es este `.pacnew`: pacman no pisa un archivo de backup que no
+    # reconoce, así que deja el viejo y pone el nuestro al lado. Para
+    # configuración eso es exactamente lo correcto. Para éste no, porque el
+    # archivo que queda abajo dice que el equipo es otra distribución, y nadie va
+    # a ir a mirar un `.pacnew` del que nunca se enteró.
+    #
+    # La regla se dice en una línea: si lo que hay abajo **ya** identifica a
+    # VasakOS, es de alguien que lo editó y se respeta; si dice cualquier otra
+    # cosa, es de la distribución anterior y se reemplaza. Pasa una sola vez: de
+    # ahí en adelante el archivo coincide con el que pacman anotó al instalarlo y
+    # las actualizaciones lo escriben sin dejar `.pacnew`.
+    if [ -f /etc/os-release.pacnew ]; then
+        if grep -q '^ID=vasakos$' /etc/os-release 2>/dev/null; then
+            echo "  /etc/os-release ya identifica a VasakOS: se deja el que está."
+            echo "  (el del paquete quedó en /etc/os-release.pacnew)"
+        else
+            mv /etc/os-release.pacnew /etc/os-release
+            echo "  /etc/os-release decía ser otra distribución: ahora dice VasakOS."
+        fi
+    fi
+
     # Idle lock runs under systemd, not wayfire autostart.
     mkdir -p /etc/systemd/user/graphical-session.target.wants
     ln -sf /usr/lib/systemd/user/vasak-idle.service \
