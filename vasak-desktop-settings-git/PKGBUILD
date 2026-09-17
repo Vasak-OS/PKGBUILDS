@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=19
+pkgrel=20
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -111,6 +111,14 @@ depends=(
 # archivo viejo y pone el nuestro al lado como `.pacnew`. Ese `.pacnew` lo
 # resuelve el `.install`, que es donde está explicado con qué regla.
 backup=('etc/os-release')
+optdepends=(
+    # El logo de VasakOS en la terminal. `etc/fastfetch/config.jsonc` y el
+    # dibujo de `usr/share/fastfetch/logos/` no hacen nada sin él, y no se
+    # declara como dependencia porque un escritorio no necesita un fetch para
+    # funcionar: lo instala quien lo quiere —el instalador lo ofrece— y ahí el
+    # logo aparece solo.
+    'fastfetch: el logo de VasakOS en la terminal'
+)
 source=("git+${url}.git")
 sha256sums=('SKIP')
 install="vasak-desktop-settings.install"
@@ -265,6 +273,13 @@ package() {
     # contestaba «No existe el fichero o el directorio» en todos los equipos.
     install -Dm644 "$srcdir/$pkgname/etc/vasakos/vasakos-release" \
         "$pkgdir/etc/vasakos/vasakos-release"
+
+    # Y el logo, que es la misma identidad en la terminal. El dibujo viaja con
+    # el `cp -r usr` de más abajo; esto es la configuración que le dice a
+    # fastfetch que lo use, porque sus logos van compilados adentro del binario
+    # y `LOGO=vasakos` de os-release no alcanza para que aparezca uno nuevo.
+    install -Dm644 "$srcdir/$pkgname/etc/fastfetch/config.jsonc" \
+        "$pkgdir/etc/fastfetch/config.jsonc"
 
     # Los perfiles de AppArmor que sí se instalan.
     #
