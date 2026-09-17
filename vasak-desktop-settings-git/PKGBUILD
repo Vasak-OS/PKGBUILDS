@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop-settings
 pkgver=0.5.18
-pkgrel=17
+pkgrel=18
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -127,6 +127,11 @@ check() {
     # Y que lo que le escribimos a archivos de otros paquetes se pueda sacar
     # entero. Corre contra el `.install` de este mismo directorio.
     VSK_INSTALL="$startdir/$install" ./pruebas/marcas-en-archivos-ajenos.sh || return 1
+
+    # Que el ruido de AppArmor siga fuera del diario: que la lista de perfiles
+    # ignorados esté, que el tope del diario le gane al de cachyos-settings, y
+    # —lo que más importa— que este PKGBUILD los instale. Corre contra sí mismo.
+    VSK_PKGBUILD="$startdir/PKGBUILD" ./pruebas/apparmor-ruido-fuera-del-diario.sh || return 1
 
     local vasak_apps gtk3 gtk4 esquema
     # La familia de `apps` en vasak.conf, sin comillas.
@@ -274,6 +279,7 @@ package() {
     chmod a+x $pkgdir/usr/bin/vasak-session
     chmod a+x $pkgdir/usr/lib/vasak/generar-pipewire-conf
     chmod a+x $pkgdir/usr/lib/vasak/copiar-arranque
+    chmod a+x $pkgdir/usr/lib/vasak/descargar-perfiles-ignorados
     chmod a+x $pkgdir/usr/lib/vasak/restaurar-arranque
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
 }
