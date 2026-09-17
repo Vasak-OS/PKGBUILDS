@@ -1,0 +1,131 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+pkgname=vasak-store
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Application store for VasakOS: pacman, AUR and AppImages"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('MIT')
+depends=(
+    # La ventana.
+    'webkit2gtk-4.1'
+    'gtk3'
+    'cairo'
+    'gdk-pixbuf2'
+    'glib2'
+    'libsoup3'
+    'pango'
+    'hicolor-icon-theme'
+    'desktop-file-utils'
+    # El bus del sistema, por donde la ventana le habla al servicio.
+    'dbus'
+    # Quien decide si una operación se hace. Sin polkit el servicio rechaza
+    # todo lo que cambie algo, y la tienda queda de sólo lectura.
+    'polkit'
+    # `libalpm.so.16`, que es la biblioteca de pacman: la misma que usa pacman
+    # para resolver dependencias y aplicar transacciones. También trae
+    # `pacman-conf`, que es quien interpreta /etc/pacman.conf, y `makepkg`, que
+    # compila lo del AUR. Auditado con `readelf -d`, no con `ldd`.
+    'pacman'
+    # El catálogo de AppStream: nombres, descripciones, categorías, íconos y
+    # capturas. Sin esto la tienda funciona —busca, instala, actualiza— pero
+    # Descubrir queda vacío y las listas muestran nombres de paquete.
+    'archlinux-appstream-data'
+)
+optdepends=(
+    'git: para traer las recetas del AUR'
+    'base-devel: para compilar paquetes del AUR'
+)
+makedepends=('git' 'cargo' 'bun' 'rust')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+# makepkg inyecta `-flto` global en CFLAGS/LDFLAGS, y los crates que compilan C
+# o assembly —`ring`, por rustls— emiten bitcode que el enlazador de rustc no
+# resuelve. Cargo ya hace su propio LTO en el perfil de release, así que el de
+# makepkg es redundante además de dañino.
+options=('!lto')
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    bun install
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    unset CFLAGS
+    unset CXXFLAGS
+    unset CPPFLAGS
+    unset LDFLAGS
+
+    # Un paquete no se compila para la máquina que lo compila.
+    #
+    # makepkg exporta RUSTFLAGS desde makepkg.conf, y en esta máquina
+    # /etc/makepkg.conf.d/rust.conf pone `-C target-cpu=native`: eso compila
+    # para el procesador que haga el build, y el resultado muere con SIGILL en
+    # cualquiera más viejo. `x86-64` es la base que implementa todo equipo de 64
+    # bits. No se pierde nada: opt-level, LTO y codegen-units no dependen del
+    # modelo de procesador y quedan como los deja el Cargo.toml del proyecto.
+    #
+    # CARGO_ENCODED_RUSTFLAGS le gana a RUSTFLAGS en la precedencia de cargo,
+    # así que tiene que irse o poner RUSTFLAGS acá no haría nada.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+
+    # El servicio es Rust a secas. Compilarlo aparte deja la cadena de
+    # JavaScript fuera del camino, y es la pieza que tiene que quedar aunque la
+    # mitad gráfica falle.
+    cargo build --release --locked -p vasak-store-daemon
+
+    # `-- --locked` le pasa la bandera a cargo, que es el runner de `tauri
+    # build`. Sin ella un candado desfasado se resuelve solo y en silencio, y
+    # dos compilaciones del mismo commit pueden dar binarios distintos.
+    bun run tauri build -- --locked
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    # El directorio del bundle lleva la versión de tauri.conf.json, no la de
+    # este archivo. Cuando las dos se separan, la copia de abajo falla con
+    # `cp: cannot stat` nombrando una ruta en lugar del problema — y una
+    # compilación que llegó hasta acá ya gastó sus buenos minutos.
+    local construido
+    construido=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        "src-tauri/tauri.conf.json" | head -1)
+    if [ -n "$construido" ] && [ "$construido" != "$pkgver" ]; then
+        error "pkgver=$pkgver pero la aplicación se construyó como $construido."
+        error "Actualizá pkgver en este PKGBUILD para que coincida."
+        return 1
+    fi
+
+    cp -a "target/release/bundle/deb/${pkgname}_${pkgver}_"*/data/* "${pkgdir}"
+
+    # El servicio del sistema y lo que lo hace arrancar.
+    install -Dm755 "target/release/vasak-store-daemon" \
+        "$pkgdir/usr/bin/vasak-store-daemon"
+    install -Dm644 "packaging/ar.net.vasak.os.Store.conf" \
+        "$pkgdir/usr/share/dbus-1/system.d/ar.net.vasak.os.Store.conf"
+    install -Dm644 "packaging/ar.net.vasak.os.Store.service" \
+        "$pkgdir/usr/share/dbus-1/system-services/ar.net.vasak.os.Store.service"
+    install -Dm644 "packaging/ar.net.vasak.os.store.policy" \
+        "$pkgdir/usr/share/polkit-1/actions/ar.net.vasak.os.store.policy"
+    install -Dm644 "packaging/vasak-store-daemon.service" \
+        "$pkgdir/usr/lib/systemd/system/vasak-store-daemon.service"
+
+    # El nuestro pisa al que genera Tauri, que pone el nombre del paquete como
+    # `Name` y lo deja sin traducir y sin categoría.
+    install -Dm644 "packaging/vasak-store.desktop" \
+        "$pkgdir/usr/share/applications/vasak-store.desktop"
+
+    # El plugin de idiomas resuelve los catálogos en tiempo de ejecución y sólo
+    # prueba rutas relativas al ejecutable, así que un paquete instalado no
+    # encuentra nada si no van donde `locales.rs` los busca. Sin esto la tienda
+    # abre mostrando las claves crudas.
+    install -dm755 "$pkgdir/usr/share/$pkgname/locales"
+    install -Dm644 "src-tauri/locales/"*.yml \
+        "$pkgdir/usr/share/$pkgname/locales/"
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
