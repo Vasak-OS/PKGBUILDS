@@ -27,6 +27,16 @@ depends=(
     'hicolor-icon-theme'
     'libsoup3'
     'pango'
+    # La base de datos de tipos de archivo de freedesktop, que es de donde sale
+    # el icono de cada uno. Sin ella `g_content_type_guess` contesta
+    # «application/octet-stream» para todo y la ventana vuelve a dibujar hojas en
+    # blanco: no rompe, pero deja de servir. Llegaba de arrastre por gdk-pixbuf2;
+    # ahora se usa de frente, así que se declara.
+    #
+    # No lleva auditoría con `readelf` porque no aporta ninguna biblioteca: son
+    # los datos de /usr/share/mime —freedesktop.org.xml y la caché que arma
+    # `update-mime-database`— que lee glib2, que sí está más abajo.
+    'shared-mime-info'
     'webkit2gtk-4.1'
     'gst-plugins-base'
     'gst-plugins-good'
