@@ -39,6 +39,7 @@ optdepends=(
 makedepends=('git' 'cargo' 'bun' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
+install="vasak-store.install"
 
 # makepkg inyecta `-flto` global en CFLAGS/LDFLAGS, y los crates que compilan C
 # o assembly —`ring`, por rustls— emiten bitcode que el enlazador de rustc no

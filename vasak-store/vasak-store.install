@@ -1,0 +1,29 @@
+post_install() {
+    # El icono y la entrada del menú viven en cachés que no se rearman solas: sin
+    # esto, el escritorio sigue mostrando el icono anterior —o el genérico— hasta
+    # que otro paquete las refresque de casualidad.
+    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+    update-desktop-database -q
+
+    # El servicio de paquetes no se habilita: lo levanta D-Bus cuando la ventana
+    # le pide algo. Pero systemd tiene que haber leído la unidad antes de que eso
+    # pase, o la primera activación falla con «Unit not found».
+    systemctl daemon-reload 2>/dev/null || true
+}
+
+post_upgrade() {
+    post_install
+
+    # Y el que esté corriendo es el binario viejo. El servicio se va solo a los
+    # cinco minutos sin trabajo, así que muchas veces no hay ninguno; `try-restart`
+    # no hace nada cuando es así y reinicia cuando sí lo hay. Sin esto, el paquete
+    # dice la versión nueva y el proceso que instala paquetes sigue siendo el de
+    # antes hasta que se aburra.
+    systemctl try-restart vasak-store-daemon.service 2>/dev/null || true
+}
+
+post_remove() {
+    gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
+    update-desktop-database -q
+    systemctl daemon-reload 2>/dev/null || true
+}
