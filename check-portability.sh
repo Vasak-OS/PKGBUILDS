@@ -70,9 +70,18 @@ VECTOR='\b(vpbroadcast[a-z]+|vperm[a-z0-9]+|vfmadd[0-9]+[a-z]+|vpsravd|vgather[a
 # whether anything in it reads CPUID. Answered in one pass: these binaries are
 # big and disassembling them twice was already the slow part of this script.
 #
-# Prints: <instrucciones> <bloques de 64 KB> <ancho en bytes> <cpuid>
+# Prints: <instrucciones> <bloques con hits> <ancho en bytes> <cpuid más cercano>
+#         <cuántos cpuid> <bloques de código en total>
 measure_file() {
   objdump -d --no-show-raw-insn "$1" 2>/dev/null | gawk -v fp="$GAWK_FINGERPRINT" '
+    # Todas las instrucciones, para saber cuánto código tiene el binario. Es el
+    # denominador de la densidad: 3 bloques con BMI no significan lo mismo en un
+    # binario de 250 KB que en uno de 12 MB.
+    /^[ ]+[0-9a-f]+:/ {
+      a = $1; sub(":", "", a)
+      t = strtonum("0x" a)
+      if (t > 0) { todos[int(t / 65536)] = 1 }
+    }
     $0 ~ fp {
       addr = $1; sub(":", "", addr)
       d = strtonum("0x" addr)
@@ -94,7 +103,8 @@ measure_file() {
       for (i = 1; i <= cpuids; i++)
         if (cpuid[i] < min && (distancia == -1 || min - cpuid[i] < distancia))
           distancia = min - cpuid[i]
-      printf "%d %d %d %d\n", hits + 0, length(block), (max - min) + 0, distancia
+      printf "%d %d %d %d %d %d\n", hits + 0, length(block), (max - min) + 0, distancia,
+        cpuids + 0, length(todos)
     }
   '
 }
@@ -110,6 +120,33 @@ measure_file() {
 # ring, que es la razón de todo esto, mide 108 KB y tiene su control 2 KB antes.
 ANCHO_MAX=$((256 * 1024))
 CONTROL_MAX=$((128 * 1024))
+
+# El segundo camino: la densidad.
+#
+# La regla de arriba pide que el control esté **cerca**, y eso vale para el
+# ensamblador escrito a mano —ring lee CPUID justo antes de elegir la rutina—
+# pero no para lo que Rust genera con `#[target_feature]` y
+# `is_x86_feature_detected!`: ahí la detección vive en la biblioteca estándar,
+# se cachea en una variable global y el enlazador la deja donde quiere. En
+# vasak-store quedó a 5,7 MB de distancia y el paquete se marcó como no
+# portable teniendo las dos rutas guardadas.
+#
+# Lo que de verdad separa un caso del otro es **cuánto del binario** tiene estas
+# instrucciones. Un compilador apuntado por encima de la base las reparte por
+# todo lo que compiló; un par de rutas rápidas ocupan un rincón. Medido sobre un
+# control hecho a propósito —el mismo programa compilado con `target-cpu=native`
+# y con `x86-64`—:
+#
+#   canario nativo   193 instrucciones en 5 bloques de 4 que tiene el binario, 0 cpuid
+#   canario base       0 instrucciones
+#   vasak-store      393 instrucciones en 3 bloques de 184, 25 cpuid
+#
+# El nativo no tiene un solo cpuid: nada guarda esas instrucciones porque no hay
+# nada que decidir, se ejecutan siempre. Así que se pide cpuid **y** que lo
+# marcado sea un rincón: hasta dieciséis bloques y, a la vez, no más de la mitad
+# del código. Lo segundo es para que un binario chico, donde dieciséis bloques
+# serían todo, no entre por la ventana.
+BLOQUES_MAX=16
 
 escanear_de_verdad() {
   local pkg="$1" name work bad=0
@@ -139,8 +176,8 @@ escanear_de_verdad() {
     LC_ALL=C IFS= read -r -N 4 _magia < "$file" 2>/dev/null || continue
     [[ "$_magia" == $'\x7fELF' ]] || continue
 
-    local hits bloques ancho control
-    read -r hits bloques ancho control < <(measure_file "$file")
+    local hits bloques ancho control cpuids bloques_totales
+    read -r hits bloques ancho control cpuids bloques_totales < <(measure_file "$file")
     [[ "${hits:-0}" -gt 0 ]] || continue
 
     local corto="${file#"$work"/}"
@@ -153,6 +190,13 @@ escanear_de_verdad() {
       continue
     fi
 
+    if [[ "${cpuids:-0}" -gt 0 && "$bloques" -le $BLOQUES_MAX &&
+          $((bloques * 2)) -le "${bloques_totales:-0}" ]]; then
+      printf '  %s%-52s%s %s instrucción(es) BMI en %s de %s bloques, con %s lectura(s) de CPUID: rutas guardadas, no el compilador\n' \
+        "$DIM" "$corto" "$OFF" "$hits" "$bloques" "$bloques_totales" "$cpuids"
+      continue
+    fi
+
     if [[ $reported -eq 0 ]]; then
       echo "  ${RED}$name${OFF}"
       reported=1
@@ -160,8 +204,8 @@ escanear_de_verdad() {
     fi
     local vec
     vec="$(objdump -d --no-show-raw-insn "$file" 2>/dev/null | grep -coE "$VECTOR" || true)"
-    printf '      %-52s %s instrucción(es) BMI en %s bloques de 64 KB, %s vectoriales\n' \
-      "$corto" "$hits" "$bloques" "$vec"
+    printf '      %-52s %s instrucción(es) BMI en %s de %s bloques de 64 KB, %s vectoriales, %s cpuid\n' \
+      "$corto" "$hits" "$bloques" "$bloques_totales" "$vec" "${cpuids:-0}"
   done < <(find "$work" -type f -print0 2>/dev/null)
 
   rm -rf "$work"
