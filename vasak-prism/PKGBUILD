@@ -1,0 +1,138 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-prism
+pkgver=0.7.0
+pkgrel=1
+pkgdesc="Prism, el lanzador de VasakOS: una consulta, todos los resultados."
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPLv3')
+# Lo que el binario enlaza, leído con `readelf -d` sobre el release y no con
+# `ldd`, que muestra también lo que arrastran las dependencias de las
+# dependencias y termina en una lista que nadie puede justificar.
+#
+# Por eso no está `pango`: no aparece en los `NEEDED`. Llega igual con gtk3, y
+# declararlo sería declarar media biblioteca del sistema.
+depends=(
+    'cairo'
+    'dbus'
+    'desktop-file-utils'
+    'gdk-pixbuf2'
+    'glib2'
+    'gtk3'
+    'hicolor-icon-theme'
+    'libsoup3'
+    'webkit2gtk-4.1'
+    # La ventana: centrada, encima de todo y con el teclado en exclusiva. Con una
+    # ventana normal el compositor la pone donde quiere. Sin esto el lanzador
+    # abre igual —pregunta antes y cae a una ventana común— pero abre mal.
+    'gtk-layer-shell'
+    # La caché del índice de aplicaciones y el registro de uso, los dos en
+    # SQLite. Enlazado, no llamado: sale en los `NEEDED`.
+    'sqlite'
+    # De acá para abajo, lo que **no** se enlaza y no se ve con readelf: son
+    # programas que el lanzador ejecuta. Sin ellos compila igual y falla al
+    # usarse, que es el peor momento para enterarse.
+    #
+    # `wl-copy`, que es por donde se copia el resultado de una cuenta o un
+    # emoji. Va por ahí y no con una API propia porque en esta sesión el
+    # portapapeles es un protocolo privilegiado y el permiso lo tiene wl-copy.
+    'wl-clipboard'
+    # `xdg-open`, para abrir un archivo o una dirección con lo que corresponda.
+    'xdg-utils'
+    # `systemd-run`, que pone cada programa lanzado en su propio ámbito, y la
+    # unidad de usuario que deja el daemon corriendo con la sesión.
+    'systemd'
+)
+optdepends=(
+    'vasak-terminal: para las entradas del escritorio que piden una terminal'
+    'vasak-file-manager: el índice de archivos que el lanzador lee'
+    'vasak-settings: las secciones de la configuración como resultados'
+    'vasak-desktop: las ventanas abiertas como resultados'
+)
+makedepends=(
+    'git'
+    'openssl'
+    'appmenu-gtk-module'
+    'libappindicator-gtk3'
+    'librsvg'
+    'cargo'
+    'bun'
+    'rust'
+    'lld'
+)
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+# makepkg inyecta -flto global en CFLAGS/LDFLAGS, y los crates que compilan C o
+# assembly emiten bitcode que el enlazador de rustc no resuelve. Cargo ya hace su
+# propio LTO en el perfil de release, así que el de makepkg es redundante además
+# de dañino.
+options=('!lto')
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    bun install
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    unset CFLAGS
+    unset CXXFLAGS
+    unset CPPFLAGS
+    unset LDFLAGS
+    # Un paquete no se compila para la máquina que le tocó compilarlo.
+    #
+    # makepkg exporta RUSTFLAGS desde makepkg.conf, y acá rust.conf pone
+    # `-C target-cpu=native`: eso compila para el CPU que está construyendo, y el
+    # resultado muere con SIGILL en cualquiera más viejo. `x86-64` es la línea de
+    # base que todas las máquinas de 64 bits implementan.
+    #
+    # CARGO_ENCODED_RUSTFLAGS le gana a RUSTFLAGS en la precedencia de cargo, así
+    # que tiene que irse o poner RUSTFLAGS acá se ignoraría en silencio.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    bun run tauri build -- --locked
+}
+
+package() {
+    # El directorio del bundle lleva la versión de tauri.conf.json, no la de este
+    # archivo. Cuando las dos se separan, la copia falla con `cp: cannot stat`
+    # nombrando una ruta en lugar del problema — y una compilación que llegó
+    # hasta acá ya gastó varios minutos.
+    local built
+    built=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        "$srcdir/$pkgname/src-tauri/tauri.conf.json" | head -1)
+    if [ -n "$built" ] && [ "$built" != "$pkgver" ]; then
+        error "pkgver=$pkgver pero la aplicación se construyó como $built."
+        error "Actualizá pkgver en este PKGBUILD para que coincida."
+        return 1
+    fi
+
+    cp -a "$srcdir/$pkgname/src-tauri/target/release/bundle/deb/${pkgname}_${pkgver}_"*/data/* "${pkgdir}"
+
+    # El plugin de i18n resuelve los catálogos en tiempo de ejecución y sólo prueba
+    # rutas relativas al ejecutable y al directorio de trabajo, así que un paquete
+    # instalado no encuentra nada si no van donde lib.rs los busca.
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
+    install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
+        "${pkgdir}/usr/share/${pkgname}/locales/"
+
+    # La entrada del escritorio propia, encima de la que genera el empaquetador
+    # de Tauri. La nuestra lleva `NoDisplay=true` —un lanzador no va en el menú—
+    # y el `StartupWMClass` con el identificador completo.
+    install -Dm644 "$srcdir/$pkgname/packaging/${pkgname}.desktop" \
+        "${pkgdir}/usr/share/applications/${pkgname}.desktop"
+
+    # El daemon, que es de lo que depende que abrir el lanzador sea instantáneo:
+    # la ventana se construye al levantar la sesión y el atajo sólo la muestra.
+    install -Dm644 "$srcdir/$pkgname/packaging/${pkgname}.service" \
+        "${pkgdir}/usr/lib/systemd/user/${pkgname}.service"
+
+    # Y la activación por D-Bus, que es la red de seguridad: una sesión que no
+    # haya levantado la unidad, o un servicio que se cayó, no dejan el atajo
+    # muerto.
+    install -Dm644 "$srcdir/$pkgname/packaging/ar.net.vasak.Prism.service" \
+        "${pkgdir}/usr/share/dbus-1/services/ar.net.vasak.Prism.service"
+}
