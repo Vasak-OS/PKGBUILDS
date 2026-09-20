@@ -1,6 +1,6 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 pkgname=vasak-store
-pkgver=0.5.0
+pkgver=0.5.1
 pkgrel=1
 pkgdesc="Application store for VasakOS: pacman, AUR and AppImages"
 arch=('x86_64')
