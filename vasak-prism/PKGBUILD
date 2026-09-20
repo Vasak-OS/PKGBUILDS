@@ -135,4 +135,15 @@ package() {
     # muerto.
     install -Dm644 "$srcdir/$pkgname/packaging/ar.net.vasak.Prism.service" \
         "${pkgdir}/usr/share/dbus-1/services/ar.net.vasak.Prism.service"
+
+    # El enlace de habilitación, hecho a mano y no copiado.
+    #
+    # `[Install]` sólo hace efecto al correr `systemctl enable`, y a un paquete
+    # nadie se lo corre. Sin este enlace la unidad queda instalada y no arranca
+    # con la sesión: el lanzador seguiría abriendo —el atajo levanta el daemon si
+    # no hay ninguno— pero la primera vez pagaría el arranque completo del
+    # WebView, que es justo lo que la unidad viene a evitar.
+    install -dm755 "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants"
+    ln -sf "../${pkgname}.service" \
+        "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants/${pkgname}.service"
 }
