@@ -27,6 +27,14 @@ depends=(
     'wayland'
     'glibc'
     'gcc-libs'
+    # Las dos mitades del mismo movimiento, y por eso la versión.
+    #
+    # Desde 0.2.0 este plugin le saca a `grim` los protocolos de captura y se
+    # los da a `vasak-shot`, que recién desde 0.2.7 los usa por su cuenta.
+    # Actualizar sólo este paquete deja el escritorio sin capturas: `grim` ya
+    # no puede y la versión vieja de `vasak-shot` no sabe. Con esto pacman no
+    # deja separarlos.
+    'vasak-shot>=0.2.7'
 )
 makedepends=('git' 'meson' 'ninja' 'pkgconf')
 source=("git+${url}.git")

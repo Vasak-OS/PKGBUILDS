@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-shot
-pkgver=0.2.6
+pkgver=0.2.7
 pkgrel=1
 pkgdesc="Screenshot tool for Vasak OS: captures first, shows the selector after."
 arch=('x86_64')
@@ -21,10 +21,15 @@ depends=(
     # La superficie de selección tapa todo, panel incluido, así que no es una
     # ventana normal: va en la capa de superposición del compositor.
     'gtk-layer-shell'
-    # Los píxeles los toma grim, que ya habla zwlr_screencopy correctamente y
-    # maneja varias salidas con sus escalas. Sin esto la herramienta no captura
-    # nada, y es lo único que hace.
-    'grim'
+    # `grim` ya no está, y no lo reemplaza nada: los píxeles los toma la
+    # aplicación hablando `zwlr_screencopy` por su cuenta. Se fue porque la
+    # lista de permitidos del compositor es por ejecutable, y con `grim` adentro
+    # cualquier programa capturaba la pantalla llamándolo.
+    #
+    # Sin dependencia nueva a cambio: el crate de Wayland trae su propia
+    # implementación del protocolo y **no** enlaza `libwayland-client`.
+    # Comprobado con `readelf -d` sobre el binario: ninguno de sus dieciséis
+    # NEEDED la nombra.
     # wl-copy es el que sabe declarar image/png en el portapapeles de Wayland.
     # El de Tauri maneja texto, y lo que hace útil una captura es poder pegarla
     # como imagen.
