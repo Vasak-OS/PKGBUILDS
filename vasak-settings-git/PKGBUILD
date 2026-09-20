@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.17.1
+pkgver=0.18.0
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
@@ -124,4 +124,11 @@ package() {
     install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
     install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
         "${pkgdir}/usr/share/${pkgname}/locales/"
+
+    # El catálogo de secciones, que lee `vasak-prism` para ofrecer «Wi-Fi» o
+    # «Pantallas» y abrir esta ventana ahí en vez de en la portada. Lo genera
+    # `bun run secciones` desde el menú lateral y una prueba del repositorio no
+    # lo deja separarse; acá sólo se instala, al lado de los catálogos.
+    install -Dm644 "$srcdir/$pkgname/packaging/secciones.json" \
+        "${pkgdir}/usr/share/${pkgname}/secciones.json"
 }
