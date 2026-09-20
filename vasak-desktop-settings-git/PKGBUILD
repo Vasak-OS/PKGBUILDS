@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.18
+pkgver=0.5.19
 pkgrel=20
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
