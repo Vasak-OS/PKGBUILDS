@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-resonance
-pkgver=0.6.2
+pkgver=0.6.3
 pkgrel=1
 pkgdesc="Resonance audio player for VasakOS"
 arch=('x86_64')
