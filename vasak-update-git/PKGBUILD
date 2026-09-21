@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-update
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="Avisa cuando hay actualizaciones del sistema, y qué mirar antes de aplicarlas"
 arch=('x86_64')
