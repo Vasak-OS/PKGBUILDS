@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-prism
-pkgver=0.11.2
+pkgver=0.12.0
 pkgrel=1
 pkgdesc="Prism, el lanzador de VasakOS: una consulta, todos los resultados."
 arch=('x86_64')
@@ -13,6 +13,10 @@ license=('GPLv3')
 #
 # Por eso no está `pango`: no aparece en los `NEEDED`. Llega igual con gtk3, y
 # declararlo sería declarar media biblioteca del sistema.
+#
+# Y por eso tampoco hay nada de TLS, aunque desde la 0.12.0 el lanzador baje las
+# cotizaciones por HTTPS: va con `rustls`, que es Rust puro y queda dentro del
+# binario. `readelf` sobre el release no muestra `libssl` ni `libcrypto`.
 depends=(
     'cairo'
     'dbus'
