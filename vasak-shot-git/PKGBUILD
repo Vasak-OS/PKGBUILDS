@@ -34,8 +34,20 @@ depends=(
     # El de Tauri maneja texto, y lo que hace útil una captura es poder pegarla
     # como imagen.
     'wl-clipboard'
-    # notify-send, para avisar dónde quedó la captura.
+    # notify-send, para avisar dónde quedó la captura y para la cuenta regresiva
+    # del retardo. El aviso lleva botones —`--action`—, que el demonio de
+    # notificaciones de VasakOS soporta; donde no, no aparecen y el aviso queda
+    # como estaba.
     'libnotify'
+    # xdg-open, para abrir la captura o su carpeta desde el aviso. Respeta el
+    # visor y el gestor de archivos que la persona haya elegido, que es
+    # justamente lo que no hay que decidir acá.
+    'xdg-utils'
+    # curl, para subir la captura cuando hay una dirección configurada — que por
+    # omisión no la hay. Es el que sabe de certificados del sistema, de proxies y
+    # de redirecciones: meter una pila de TLS adentro de la aplicación serían
+    # cien dependencias nuevas y un segundo almacén de certificados que mantener.
+    'curl'
 )
 makedepends=(
     'git'
