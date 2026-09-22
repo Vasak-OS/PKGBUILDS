@@ -105,7 +105,7 @@ pkgname=vasakos-desktop
 # ya existieron, y así ninguna versión publicada parece haber ido para atrás.
 # `vercmp 1-11 1.11.0-1` da -1, así que las máquinas con la anterior instalada
 # actualizan.
-pkgver=1.12.0
+pkgver=1.13.0
 pkgrel=1
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
@@ -306,6 +306,22 @@ depends=(
   # Decides which applications may use the online accounts; vasak-accounts
   # refuses every request without it.
   vasak-permissions
+  # El módulo de WirePlumber que hace cumplir el permiso de cámara: le pregunta
+  # a `vasak-permissions` por cada cliente de PipeWire y le oculta los objetos
+  # de cámara al que no tenga permiso.
+  #
+  # **Viene apagado**, así que instalarlo no cambia nada todavía. Está acá y no
+  # como sugerencia por lo mismo que `vasak-wayfire-plugins`: instalado es como
+  # se prueba en un equipo de verdad, y encenderlo pasa a ser una línea en /etc
+  # en vez de una compilación. Un módulo que hay que compilar para probar no lo
+  # prueba nadie.
+  #
+  # Se enciende cuando una negación suya genere aviso —o cuando Privacidad y
+  # seguridad liste también a las aplicaciones que todavía no preguntaron—,
+  # porque hoy una que nunca preguntó no tiene interruptor que mover y
+  # encenderlo sería bloquear sin poder desbloquear. El porqué entero está en
+  # `/usr/share/wireplumber/wireplumber.conf.d/50-vasak-permisos-de-medios.conf`.
+  vasak-wireplumber-modules
   vasak-accounts
   # Mantener una tecla apretada abre el selector de acentos.
   vasak-press-and-hold
