@@ -26,6 +26,14 @@
 # lint que siempre falla es un lint que nadie mira; el gate es para que no vuelva
 # a pasar.
 #
+# Y el otro lado de lo mismo: **corta por el código de salida de biome, no por
+# contar líneas**. Contándolas, un diagnóstico `info` —que biome emite saliendo
+# con cero, y que el `bun run lint` del repo da por bueno— salteaba el paquete.
+# Una corrida se llevó puestos quince: doce por un `biome.json` que declaraba el
+# esquema 2.5.12 con el CLI en 2.5.14, y los otros por nombres de componente de
+# una sola palabra. Un lint que corta por lo que no corta es la otra manera de
+# que nadie lo mire.
+#
 # El del lock parece de trámite y cortó una compilación de once paquetes por la
 # mitad. `makepkg` construye con `--locked` —que es lo correcto: un paquete tiene
 # que salir de las mismas dependencias exactas dos veces— y ahí un lock
@@ -251,18 +259,39 @@ necesita_instalar() {
 
     # biome. Se mira el propio biome.json además de los archivos: sus errores de
     # configuración son los que hacían fallar la corrida entera.
+    #
+    # **Corta por el código de salida, no por contar líneas.** Contándolas, un
+    # diagnóstico `info` —que biome emite saliendo con cero, y que el `bun run
+    # lint` del repo da por bueno— salteaba el paquete: una corrida se llevó
+    # puestos quince porque doce `biome.json` declaraban el esquema 2.5.12 y el
+    # CLI era el 2.5.14. Un aviso informativo sobre una URL no puede dejar sin
+    # compilar media ISO.
+    #
+    # `--error-on-warnings` es lo que mantiene el gate en cero: los `warning` sí
+    # cortan, que es para lo que se puso. Los `info` se muestran igual, porque
+    # verlos es lo que hace que alguien los arregle.
     if [[ $DO_LINT -eq 1 ]] && grep -q '"lint"' "$dir/package.json" && have bun; then
       if [[ ! -d "$dir/node_modules" ]]; then
         report lint "${YELLOW}skipped${OFF} ${DIM}(no node_modules)${OFF}"
       else
-        out="$(cd "$dir" && bunx --bun biome check . 2>&1)"
-        n="$(grep -cE '^[^ ]+\.(ts|vue|js|css|json)[: ]' <<<"$out")"
-        if [[ "$n" -eq 0 ]]; then
-          report lint "${GREEN}ok${OFF}"
-        else
+        out="$(cd "$dir" && bunx --bun biome check --error-on-warnings . 2>&1)"
+        estado=$?
+        notas="$(grep -E '^[^ ]+\.(ts|vue|js|css|json)[: ]' <<<"$out" | sed 's/ .*//')"
+        n="$(grep -c . <<<"${notas:-}")"
+        [[ -z "$notas" ]] && n=0
+        if [[ $estado -ne 0 ]]; then
           report lint "${RED}${n} aviso(s) de biome${OFF}"
-          grep -E '^[^ ]+\.(ts|vue|js|css|json)[: ]' <<<"$out" | sed 's/ .*//' | head -5 | sed 's/^/             /'
+          head -5 <<<"$notas" | sed 's/^/             /'
+          # El resumen del propio biome, que dice cuántos son errores y cuántos
+          # notas: la lista de arriba las mezcla, y sin esto alguien puede
+          # ponerse a arreglar la que no cortaba.
+          grep -E '^Found ' <<<"$out" | sed 's/^/             /'
           FAILED+=("$app (biome)")
+        elif [[ "$n" -gt 0 ]]; then
+          report lint "${GREEN}ok${OFF} ${DIM}(${n} nota(s))${OFF}"
+          head -5 <<<"$notas" | sed 's/^/             /'
+        else
+          report lint "${GREEN}ok${OFF}"
         fi
       fi
     fi
