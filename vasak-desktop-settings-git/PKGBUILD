@@ -311,6 +311,13 @@ package() {
     install -Dm644 "$srcdir/$pkgname/etc/apparmor/ignore.d/50-vasakos-ruido.conf" \
         "$pkgdir/etc/apparmor/ignore.d/50-vasakos-ruido.conf"
 
+    # La prioridad de tiempo real del audio. Sin esto los hilos de datos de
+    # PipeWire corren en SCHED_OTHER y el audio chasquea bajo carga — no falla
+    # y no avisa. Venía de `cachyos-settings`, que no lo exige nadie y no entra
+    # en una instalación limpia de VasakOS.
+    install -Dm644 "$srcdir/$pkgname/etc/security/limits.d/50-vasak-audio.conf" \
+        "$pkgdir/etc/security/limits.d/50-vasak-audio.conf"
+
     # Sin cupo de printk, para que una denegación no se pierda camino al
     # servicio de permisos: lo mide el propio archivo.
     install -Dm644 "$srcdir/$pkgname/etc/sysctl.d/50-vasakos-auditoria.conf" \
