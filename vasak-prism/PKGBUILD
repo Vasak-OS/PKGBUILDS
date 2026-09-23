@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-prism
-pkgver=0.14.1
+pkgver=0.14.2
 pkgrel=1
 pkgdesc="Prism, el lanzador de VasakOS: una consulta, todos los resultados."
 arch=('x86_64')
