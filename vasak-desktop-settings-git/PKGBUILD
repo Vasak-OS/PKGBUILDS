@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.25
+pkgver=0.5.26
 pkgrel=20
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -344,5 +344,7 @@ package() {
     chmod a+x $pkgdir/usr/lib/vasak/copiar-arranque
     chmod a+x $pkgdir/usr/lib/vasak/descargar-perfiles-ignorados
     chmod a+x $pkgdir/usr/lib/vasak/restaurar-arranque
+    chmod a+x $pkgdir/usr/lib/vasak/boot-state
+    chmod a+x $pkgdir/usr/lib/vasak/boot-notice
     cp $srcdir/$pkgname/schemas/* $pkgdir/usr/share/glib-2.0/schemas
 }

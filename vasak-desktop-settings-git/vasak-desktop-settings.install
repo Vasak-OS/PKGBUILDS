@@ -38,6 +38,14 @@ post_install() {
     ln -sf /usr/lib/systemd/user/vasak-idle.service \
         /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
 
+    # El aviso de que se arrancó una instantánea. Desde que el menú de GRUB
+    # ofrece arrancar una versión anterior, el escritorio se ve igual adentro de
+    # una que en el sistema de siempre — y lo que se instale ahí se pierde al
+    # reiniciar, mientras que lo que se guarde en /home queda. Sin este aviso
+    # eso se descubre tarde.
+    ln -sf /usr/lib/systemd/user/vasak-boot-notice.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-boot-notice.service
+
     # Carga el perfil de AppArmor del llavero. Se enlaza a mano y no con
     # `systemctl enable` porque esto corre dentro del chroot del instalador,
     # donde systemd no está atendiendo. La unidad lleva
@@ -234,6 +242,7 @@ post_upgrade() {
 }
 post_remove() {
     rm -f /etc/systemd/user/graphical-session.target.wants/vasak-idle.service
+    rm -f /etc/systemd/user/graphical-session.target.wants/vasak-boot-notice.service
     rm -f /etc/systemd/system/multi-user.target.wants/vasak-apparmor.service
     rm -f /etc/systemd/system/multi-user.target.wants/apparmor.service
     # Lo que le agregamos a config, que es de grub-btrfs: se saca la marca y la
