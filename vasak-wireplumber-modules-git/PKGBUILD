@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-wireplumber-modules
-pkgver=0.1.0
+pkgver=0.2.0.r1.ga5633f0
 pkgrel=1
 pkgdesc="Módulos de WirePlumber de VasakOS"
 arch=('x86_64')
@@ -49,10 +49,17 @@ depends=(
     'glib2'
     'glibc'
     # A quién le pregunta. Sin el servicio el módulo no puede consultar nada y
-    # —porque falla cerrando— nadie tendría cámara. La versión es la que trae
-    # `QueryPermissionFor`: contra una anterior la llamada se responde con
-    # «Unknown method» y el módulo niega a todo el mundo.
-    'vasak-permissions>=0.12.0'
+    # —porque falla cerrando— nadie tendría cámara.
+    #
+    # 0.12.0 fue la que trajo `QueryPermissionFor`: contra una anterior la
+    # llamada se responde con «Unknown method» y el módulo niega a todo el
+    # mundo. La que se pide ahora es 0.14.0 por otro motivo: desde que el
+    # módulo viene encendido, una consulta sin decisión guardada tiene que
+    # **anotar el intento y avisar**, que es lo que hace que la aplicación
+    # bloqueada aparezca en Privacidad y seguridad y llegue la oferta de
+    # permitirla. Contra una 0.13 el módulo negaría igual y no llegaría nada:
+    # bloquear sin poder desbloquear.
+    'vasak-permissions>=0.14.0'
 )
 makedepends=('git' 'meson' 'ninja' 'pkgconf')
 source=("git+${url}.git")
