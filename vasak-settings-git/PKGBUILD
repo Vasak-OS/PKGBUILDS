@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.28.0
+pkgver=0.29.0
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
@@ -15,7 +15,6 @@ depends=(
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'webkit2gtk-4.1'
     'dbus'
     # El indicador de batería y la página de Energía hablan con UPower por D-Bus
