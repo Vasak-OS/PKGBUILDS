@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-file-manager
-pkgver=0.23.0
+pkgver=0.23.2
 pkgrel=1
 pkgdesc="File manager for VasakOS"
 arch=('x86_64')
@@ -26,7 +26,6 @@ depends=(
     'vasak-accounts'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     # La base de datos de tipos de archivo de freedesktop, que es de donde sale
     # el icono de cada uno. Sin ella `g_content_type_guess` contesta
     # «application/octet-stream» para todo y la ventana vuelve a dibujar hojas en
