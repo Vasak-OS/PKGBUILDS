@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-accounts
-pkgver=0.13.1
+pkgver=0.14.0
 pkgrel=1
 pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2) for VasakOS"
 arch=('x86_64')
@@ -11,17 +11,33 @@ license=('GPL3')
 # every request without it.
 depends=(
     'dbus'
+    # La base de C, auditada con `readelf -d` sobre los dos binarios: libc, libm
+    # y el cargador (glibc), y libgcc_s para desenrollar la pila. Es `libgcc` y
+    # no `gcc-libs`, que hoy es un metapaquete que arrastra libstdc++,
+    # libgfortran, libasan y compañía; ninguno de los dos binarios enlaza nada de
+    # eso.
     'glibc'
-    'gcc-libs'
+    'libgcc'
+    # La base local cifrada de cuentas usa SQLCipher (`rusqlite` con
+    # `bundled-sqlcipher`), que cifra con la libcrypto del sistema: el
+    # sincronizador enlaza `libcrypto.so.3`. SQLCipher va dentro del binario y su
+    # versión la fija el Cargo.lock; OpenSSL queda afuera a propósito, para que
+    # los parches de seguridad le lleguen con la distribución y no con un
+    # release nuestro.
+    'openssl'
     # Decide quién puede llegar a un token; el servicio rechaza todo sin él.
     'vasak-permissions'
     # Quitar una cuenta pasa por polkit: se borra la credencial y se le avisa al
     # proveedor, y eso no se deshace. Sin polkit el servicio no puede preguntar y
     # el borrado falla.
     'polkit'
-    # El almacén de certificados del sistema. Los dos binarios usan rustls y
-    # `rustls-native-certs`, que lee /etc/ssl/certs: sin eso no hay ni OAuth2 ni
-    # IMAP, porque no se puede verificar a nadie.
+    # El almacén de certificados del sistema. El IMAP del sincronizador va por
+    # rustls con `rustls-native-certs`, que lee /etc/ssl/certs: sin eso no hay
+    # correo, porque no se puede verificar a ningún servidor. (Lo HTTP de los
+    # dos binarios —OAuth2 incluido— va por reqwest con las raíces de
+    # `webpki-roots` compiladas adentro, y ése no mira el disco.) rustls es Rust
+    # puro y no suma bibliotecas compartidas; la única que se agrega fuera de la
+    # base de C es la libcrypto de SQLCipher, más arriba.
     #
     # Hoy llega igual, de arrastre por `pacman` → `curl`. Va declarado porque
     # una dependencia que se cumple de casualidad es una que se rompe el día que
