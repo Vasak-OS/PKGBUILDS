@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-accounts
-pkgver=0.16.0
+pkgver=0.16.1
 pkgrel=1
 pkgdesc="Centralized online-accounts daemon (D-Bus, OAuth2) for VasakOS"
 arch=('x86_64')
@@ -84,7 +84,9 @@ package() {
 
     install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
 
-    # El sincronizador de correo, que corre **como la persona** y no como root.
+    # El sincronizador de las cuentas: trae el correo y llena el almacén local
+    # cifrado (los contactos, y pronto el calendario). Corre **como la persona**
+    # y no como root.
     #
     # Es un binario aparte porque habla IMAP con servidores ajenos, y eso no
     # puede vivir en un proceso de root. Le pide los tokens al servicio por
