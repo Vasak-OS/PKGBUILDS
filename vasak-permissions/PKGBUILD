@@ -1,14 +1,40 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 pkgname=vasak-permissions
-pkgver=0.14.0
+pkgver=0.15.0
 pkgrel=1
 pkgdesc="System permission service for VasakOS: camera, microphone, screen and online accounts"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/vasak-permissions"
 license=('MIT')
-# polkit guards every change made from Settings; without it the management
-# calls are refused and the switches cannot be moved.
-depends=('webkit2gtk-4.1' 'gtk3' 'dbus' 'polkit' 'xdg-desktop-portal')
+depends=(
+    # Lo que enlazan los binarios, auditado con `readelf -d … | grep NEEDED` y
+    # `pacman -F` sobre la versión construida (no con `ldd`, que suma las
+    # transitivas).
+    #
+    # La ventana y el agente de diálogos: WebKitGTK (libwebkit2gtk y
+    # libjavascriptcoregtk), GTK 3 (libgtk, libgdk) y lo que el agente llama
+    # directo por debajo de GTK: cairo, gdk-pixbuf, GLib (glib, gobject, gio) y
+    # libsoup 3.
+    'webkit2gtk-4.1'
+    'gtk3'
+    'cairo'
+    'gdk-pixbuf2'
+    'glib2'
+    'libsoup3'
+    # libdbus: el agente habla con el servicio por el bus del sistema.
+    'dbus'
+    # La base de C que enlazan los dos binarios, el servicio incluido: libc,
+    # libm y el cargador (glibc), y libgcc_s para desenrollar la pila (libgcc).
+    'glibc'
+    'libgcc'
+    # polkit guards every change made from Settings; without it the management
+    # calls are refused and the switches cannot be moved.
+    'polkit'
+    # No se enlaza: el agente atiende también el diálogo de permisos del portal
+    # de escritorio (ver `vasak.portal` más abajo), y sin el portal ese archivo
+    # no lo lee nadie.
+    'xdg-desktop-portal'
+)
 makedepends=('git' 'cargo' 'bun' 'rust')
 source=("git+${url}.git")
 sha256sums=('SKIP')
