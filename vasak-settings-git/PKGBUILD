@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.29.0
+pkgver=0.30.0
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
@@ -17,6 +17,11 @@ depends=(
     'libsoup3'
     'webkit2gtk-4.1'
     'dbus'
+    # La base de C que enlaza el binario, auditada con `readelf -d`: libc, libm y
+    # el cargador (glibc), y libgcc_s para desenrollar la pila (libgcc). Llegan
+    # en cualquier sistema, pero lo que se enlaza se declara.
+    'glibc'
+    'libgcc'
     # El indicador de batería y la página de Energía hablan con UPower por D-Bus
     # (`org.freedesktop.UPower`). No venía declarado en ninguna receta ni en el
     # metapaquete, así que en una portátil el dato de batería no aparecía.
