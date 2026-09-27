@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-contacts
-pkgver=0.5.3
+pkgver=0.5.7
 pkgrel=1
 pkgdesc="Address book for VasakOS: the contacts of your connected accounts."
 arch=('x86_64')
@@ -101,4 +101,31 @@ package() {
     install -dm755 "${pkgdir}/usr/share/${pkgname}/locales"
     install -Dm644 "$srcdir/$pkgname/src-tauri/locales/"*.yml \
         "${pkgdir}/usr/share/${pkgname}/locales/"
+}
+
+pkgver() {
+    # La versión es la que declara el proyecto —el `package.json` de la raíz—, no un número
+    # escrito acá que alguien tiene que acordarse de bumpar.
+    #
+    # Sin esto la deriva era invisible: `vasak-accounts` iba cuatro versiones
+    # atrás en su receta y nada lo señalaba. `makpkg` no tiene contra qué
+    # comparar, y un paquete con la versión vieja se publica, se instala y
+    # anda. Lo único que lo delata es ir a mirarlo.
+    #
+    # **Sin sufijo `.rN.gHASH`**, a diferencia de los otros `-git` de este
+    # repo. El sufijo del nombre del directorio está para marcar *procedencia*
+    # —que el paquete sale del repo y no de los `.deb` ya compilados de los
+    # releases—, no para adoptar la convención de versions de VCS.
+    #
+    # La consecuencia, para que no se descubra por sorpresa: si el upstream
+    # hace commit sin cambiar su versión, este `pkgver` no se mueve y
+    # `build-all.sh` va a decir que el paquete está al día. El escape ya está
+    # documentado en `build-all.sh` (línea 29): **nombrar el directorio fuerza
+    # el rebuild**.
+    cd "$srcdir/$pkgname" || return 1
+    # shellcheck source=../lib/versiones.sh
+    # `$startdir` es el directorio de la receta, y `makpkg` lo define siempre.
+    # Con la ruta relativa a secas dependería del directorio de trabajo.
+    source "$startdir/../lib/versiones.sh"
+    version_de_arbol "$srcdir/$pkgname"
 }
