@@ -220,6 +220,59 @@ else
     mal "un árbol sin manifiesto no dio error claro: ${salida:-<vacío>}"
 fi
 
+# ── Bajo errexit, como lo corre makepkg ───────────────────────────────────
+printf '\n\033[1mBajo errexit, como lo corre makepkg\033[0m\n'
+
+# `makepkg` ejecuta `pkgver()` con `errexit`+`errtrace` y trampa ERR
+# (`run_function_safe` en /usr/bin/makepkg). Cada receta tiene un layout
+# distinto, así que la primera búsqueda falla en el caso normal; sin guardia,
+# esa sustitución abortaba `version_de_arbol` antes del
+# `[ -n "$valor" ] || continue` y `pkgver()` moría con el log vacío. Las
+# pruebas de arriba corren sin `-e` y no lo verían: estas dos sí, con un árbol
+# Tauri y uno Rust puro autocontenidos en `$temporal`, sin depender del
+# workspace.
+mkdir -p "$temporal/errexit-tauri/src-tauri"
+cat > "$temporal/errexit-tauri/package.json" <<'JSON'
+{
+  "name": "app",
+  "private": true,
+  "version": "1.2.3"
+}
+JSON
+cat > "$temporal/errexit-tauri/src-tauri/tauri.conf.json" <<'JSON'
+{
+  "version": "1.2.3"
+}
+JSON
+cat > "$temporal/errexit-tauri/src-tauri/Cargo.toml" <<'TOML'
+[package]
+name = "app"
+version = "1.2.3"
+TOML
+
+mkdir -p "$temporal/errexit-rust"
+cat > "$temporal/errexit-rust/Cargo.toml" <<'TOML'
+[package]
+name = "algo"
+version = "9.8.7"
+TOML
+
+ERREXIT_FIXTURES=(
+    errexit-tauri:1.2.3
+    errexit-rust:9.8.7
+)
+for pair in "${ERREXIT_FIXTURES[@]}"; do
+    fixture="${pair%%:*}"
+    expected="${pair##*:}"
+    got="$(bash -e -c "source \"$REPO_DIR/lib/versiones.sh\"; version_de_arbol \"$temporal/$fixture\"")"
+    code=$?
+    if [ "$code" -eq 0 ] && [ "$got" = "$expected" ]; then
+        ok "bajo errexit, $fixture devuelve $expected"
+    else
+        mal "bajo errexit, $fixture dio código $code y '${got:-<vacío>}' (esperaba $expected)"
+    fi
+done
+
 # ── Idempotencia ────────────────────────────────────────────────────────────
 printf '\n\033[1mDos llamadas seguidas\033[0m\n'
 

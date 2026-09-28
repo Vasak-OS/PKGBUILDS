@@ -139,9 +139,15 @@ version_de_arbol() {
     do
         ruta="${par%%|*}"
         modo="${par##*|}"
+        # `makepkg` corre `pkgver()` con `errexit`+`errtrace` y trampa ERR, así
+        # que una sustitución que devuelve no-cero aborta antes del
+        # `[ -n "$valor" ] || continue` de abajo, con el log de `pkgver` vacío.
+        # Que el manifiesto no exista o no traiga la sección es el caso normal
+        # —cada receta tiene un layout distinto y la primera búsqueda ya falla
+        # en casi todas—, no un error, así que se neutraliza acá.
         case "$modo" in
-            json)   valor="$(version_de_json "$arbol/$ruta")" ;;
-            *)      valor="$(version_de_cargo "$arbol/$ruta" "$modo")" ;;
+            json)   valor="$(version_de_json "$arbol/$ruta")" || true ;;
+            *)      valor="$(version_de_cargo "$arbol/$ruta" "$modo")" || true ;;
         esac
         # Un `Cargo.toml` de un crate **miembro** con `version.workspace = true`
         # no declara nada: hereda. No es una versión que pueda divergir, así que
