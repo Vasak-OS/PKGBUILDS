@@ -7,6 +7,11 @@ pkgdesc="Desktop for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')
+# Lo que el binario enlaza, comprobado con `readelf -d` (no con `ldd`, que
+# suma las transitivas): cairo, dbus, gdk-pixbuf2, glib2, gtk3, gtk-layer-shell,
+# libsoup3 y webkit2gtk-4.1. `pango` estaba declarado y no se enlaza: llega
+# con gtk3, que es quien lo usa. Lo demás de esta lista se usa en tiempo de
+# ejecución, no se enlaza.
 depends=(
     'cairo'
     'desktop-file-utils'
@@ -15,7 +20,6 @@ depends=(
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'webkit2gtk-4.1'
     # El fondo de escritorio puede ser un video, y WebKit lo decodifica con
     # GStreamer: sin estos no hay nada que abra un mp4 y el fondo queda fijo.
