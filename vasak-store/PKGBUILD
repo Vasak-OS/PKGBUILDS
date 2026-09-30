@@ -14,7 +14,8 @@ depends=(
     'gdk-pixbuf2'
     'glib2'
     'libsoup3'
-    'pango'
+    # Sin `pango`: no aparece en ningún NEEDED de la ventana ni del servicio, lo
+    # trae gtk3.
     'hicolor-icon-theme'
     'desktop-file-utils'
     # El bus del sistema, por donde la ventana le habla al servicio.
