@@ -51,6 +51,9 @@ depends=(
     'unzip'
     'tar'
     'dbus'
+    # `xdg-open` y `xdg-mime`: abrir con la aplicación predeterminada y saber
+    # cuál es. Se lanzaban sin declararse (#105).
+    'xdg-utils'
     # Con lo que se montan y desmontan las unidades. Se usaba desde siempre —el
     # montaje llamaba a `udisksctl`— y no figuraba: en un sistema sin él, hacer
     # clic en un pendrive no hacía nada. Ahora el montaje va por el bus, contra
@@ -60,6 +63,13 @@ depends=(
 # `unrar` es opcional: sin él lo único que no anda es abrir los .rar, y en el
 # .deb va como recomendado por estar en non-free.
 #
+# ffmpeg, poppler, sshfs y fuse3 también (#105): los dos primeros son pesados y
+# sólo dan miniaturas —sin ellos la vista muestra el icono del tipo—, y los otros
+# dos sólo le sirven a quien monta por SSH. Montar sin `sshfs` dice qué paquete
+# falta. `fuse3` trae `fusermount3`, que es con lo que se desmonta; `sshfs` ya lo
+# arrastra, pero se nombra porque lo lanza el gestor. `gio` viene en glib2, que
+# está en depends.
+#
 # `wayland` salió de `depends`: el binario no enlaza libwayland-client
 # (`readelf -d`), el plugin de arrastrar y soltar va por GTK sin dlopen, y el
 # `wayland-client` de Rust usa su backend propio. La biblioteca se carga, pero
@@ -68,6 +78,10 @@ depends=(
 optdepends=(
     'polkit-vasak-agent: para abrir discos cifrados y autorizar el montaje de particiones internas'
     'unrar: descomprimir archivos .rar'
+    'ffmpeg: miniaturas de video'
+    'poppler: miniaturas y vista previa de PDF'
+    'sshfs: montar carpetas por SSH'
+    'fuse3: desmontar las carpetas montadas por SSH'
 )
 makedepends=(
     'git'
