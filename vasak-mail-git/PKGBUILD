@@ -16,7 +16,6 @@ depends=(
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'webkit2gtk-4.1'
     # De acá sale todo el correo. La aplicación **no habla IMAP**: le pide la
     # lista y el texto a vasak-accounts-sync, que viene en este paquete y es
