@@ -16,8 +16,10 @@ depends=(
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'webkit2gtk-4.1'
+    # `xdg-open`, con el que se abren el correo y el teléfono de un contacto en
+    # la aplicación que la persona eligió (plugin-shell).
+    'xdg-utils'
     # El servicio que guarda las cuentas. Sin él no hay ninguna libreta que
     # mostrar: la aplicación abre igual y lo dice, pero una agenda que nunca
     # puede tener a nadie no es un paquete que valga la pena instalar solo.
