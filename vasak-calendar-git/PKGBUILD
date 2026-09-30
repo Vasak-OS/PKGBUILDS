@@ -17,6 +17,10 @@ depends=(
     'hicolor-icon-theme'
     'libsoup3'
     'webkit2gtk-4.1'
+    # La zona horaria y sus cambios salen de org.freedesktop.timedate1, que
+    # trae systemd. Sin él, donde ni TZ ni /etc/localtime alcancen, el
+    # calendario cae a UTC y no se entera de un cambio de zona.
+    'systemd'
     # El servicio que guarda las cuentas. Sin él no hay ningún calendario que
     # mostrar: la aplicación abre igual y lo dice, pero un calendario que nunca
     # puede tener eventos no es un paquete que valga la pena instalar solo.
