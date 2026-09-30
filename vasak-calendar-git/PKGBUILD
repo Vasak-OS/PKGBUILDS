@@ -16,7 +16,6 @@ depends=(
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'webkit2gtk-4.1'
     # El servicio que guarda las cuentas. Sin él no hay ningún calendario que
     # mostrar: la aplicación abre igual y lo dice, pero un calendario que nunca
