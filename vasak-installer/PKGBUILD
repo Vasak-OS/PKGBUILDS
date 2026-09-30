@@ -10,13 +10,14 @@ license=('GPL-3.0-or-later')
 depends=(
     # La pila de Tauri, la misma que el resto de las aplicaciones.
     'cairo'
+    # El binario enlaza libdbus (readelf -d, no ldd).
+    'dbus'
     'desktop-file-utils'
     'gdk-pixbuf2'
     'glib2'
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'webkit2gtk-4.1'
 
     # El motor de la instalación. El instalador arma su archivo de configuración
