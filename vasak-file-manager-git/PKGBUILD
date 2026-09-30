@@ -41,21 +41,34 @@ depends=(
     'gst-plugins-good'
     'gst-plugins-bad'
     'gst-libav'
+    # libzstd: el binario la enlaza (ZSTD_SYS_USE_PKG_CONFIG, más abajo), no la
+    # lanza como programa.
     'zstd'
-    'p7zip'
-    'unrar'
+    # Los compresores que el gestor lanza para comprimir y descomprimir
+    # (compress.rs y extract.rs). `7z` lo trae 7zip, que reemplazó a p7zip.
+    '7zip'
     'zip'
     'unzip'
     'tar'
     'dbus'
-    'wayland'
     # Con lo que se montan y desmontan las unidades. Se usaba desde siempre —el
     # montaje llamaba a `udisksctl`— y no figuraba: en un sistema sin él, hacer
     # clic en un pendrive no hacía nada. Ahora el montaje va por el bus, contra
     # el mismo servicio.
     'udisks2'
 )
-optdepends=('polkit-vasak-agent: para abrir discos cifrados y autorizar el montaje de particiones internas')
+# `unrar` es opcional: sin él lo único que no anda es abrir los .rar, y en el
+# .deb va como recomendado por estar en non-free.
+#
+# `wayland` salió de `depends`: el binario no enlaza libwayland-client
+# (`readelf -d`), el plugin de arrastrar y soltar va por GTK sin dlopen, y el
+# `wayland-client` de Rust usa su backend propio. La biblioteca se carga, pero
+# como NEEDED de libgdk-3, o sea que ya la trae gtk3 (comprobado con
+# LD_DEBUG=libs).
+optdepends=(
+    'polkit-vasak-agent: para abrir discos cifrados y autorizar el montaje de particiones internas'
+    'unrar: descomprimir archivos .rar'
+)
 makedepends=(
     'git'
     'pkgconf'
