@@ -16,7 +16,6 @@ depends=(
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'webkit2gtk-4.1'
     # Los servicios se leen y se manejan con systemctl, y el diario con
     # journalctl: los dos vienen en systemd, que ya está, pero se declara porque
@@ -30,6 +29,16 @@ depends=(
     # `paccache`, que recorta la caché de paquetes conservando la última versión
     # de cada uno en lugar de borrarla entera.
     'pacman-contrib'
+    # `swapoff` y `swapon`, para devolver el swap a la memoria.
+    'util-linux'
+    # `ss -x`, que dice qué procesos tienen conexión con el compositor: sin él
+    # ningún proceso figura con ventana.
+    'iproute2'
+)
+optdepends=(
+    # Sin git, las carpetas de proyecto que no se reconocen sólo por el nombre
+    # no se ofrecen para limpiar: no hay cómo saber si el repositorio las ignora.
+    'git: ofrecer las carpetas de proyecto que el repositorio ignora'
 )
 makedepends=(
     'git'
