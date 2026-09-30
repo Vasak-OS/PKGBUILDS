@@ -16,7 +16,7 @@ depends=(
     'gtk3'
     'hicolor-icon-theme'
     'libsoup3'
-    'pango'
+    # Sin `pango`: no aparece en ningún NEEDED del binario, lo trae gtk3.
     'webkit2gtk-4.1'
     # No hay ninguna más, y eso es a propósito.
     #
