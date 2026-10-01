@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-calendar
-pkgver=0.7.0
+pkgver=0.8.0
 pkgrel=1
 pkgdesc="Calendar for VasakOS: the events of your connected accounts, month by month."
 arch=('x86_64')
@@ -12,9 +12,11 @@ depends=(
     'dbus'
     'desktop-file-utils'
     'gdk-pixbuf2'
+    'glibc'
     'glib2'
     'gtk3'
     'hicolor-icon-theme'
+    'libgcc'
     'libsoup3'
     'webkit2gtk-4.1'
     # La zona horaria y sus cambios salen de org.freedesktop.timedate1, que
