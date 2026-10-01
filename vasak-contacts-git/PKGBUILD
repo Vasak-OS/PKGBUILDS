@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-contacts
-pkgver=0.6.0
+pkgver=0.7.0
 pkgrel=1
 pkgdesc="Address book for VasakOS: the contacts of your connected accounts."
 arch=('x86_64')
@@ -12,9 +12,11 @@ depends=(
     'dbus'
     'desktop-file-utils'
     'gdk-pixbuf2'
+    'glibc'
     'glib2'
     'gtk3'
     'hicolor-icon-theme'
+    'libgcc'
     'libsoup3'
     'webkit2gtk-4.1'
     # `xdg-open`, con el que se abren el correo y el teléfono de un contacto en
