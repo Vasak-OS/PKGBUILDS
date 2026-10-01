@@ -8,17 +8,25 @@ arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
 license=('GPLv3')
 depends=(
+    # Lo que enlaza el binario, auditado con `readelf -d … | grep NEEDED` y
+    # `pacman -Qo` sobre la versión construida (no con `ldd`, que suma las
+    # transitivas): WebKitGTK (libwebkit2gtk y libjavascriptcoregtk), GTK 3
+    # (libgtk, libgdk), cairo, gdk-pixbuf, GLib, libsoup 3, dbus, la capa de la
+    # terminal desplegable (gtk-layer-shell) y la base de C (glibc, libgcc).
+    # `pango` no lo enlaza: salió.
+    'webkit2gtk-4.1'
+    'gtk3'
+    'gtk-layer-shell'
     'cairo'
-    'desktop-file-utils'
     'gdk-pixbuf2'
     'glib2'
-    'gtk3'
-    'hicolor-icon-theme'
     'libsoup3'
-    'pango'
     'dbus'
-    'gtk-layer-shell'
-    'webkit2gtk-4.1'
+    'glibc'
+    'libgcc'
+    # No se enlazan: el lanzador y el icono que instala el paquete.
+    'desktop-file-utils'
+    'hicolor-icon-theme'
 )
 makedepends=(
     'git'
