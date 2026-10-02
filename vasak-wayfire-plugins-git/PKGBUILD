@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-wayfire-plugins
-pkgver=0.2.0.r23.g0979e1a
+pkgver=0.2.1.r28.ga8e5ee0
 pkgrel=1
 pkgdesc="Plugins de Wayfire de VasakOS"
 arch=('x86_64')
