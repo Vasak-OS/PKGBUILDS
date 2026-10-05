@@ -1,0 +1,90 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-health-service
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="VasakOS health service: per-application screen time"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL-3.0-or-later')
+# El binario sólo enlaza glibc y gcc-libs —auditado con `readelf -d`, no con
+# `ldd`: lo único que aparece en NEEDED es libc/libm/ld-linux y libgcc_s—.
+# `zbus` habla D-Bus en Rust puro, así que no enlaza libdbus; aun así el
+# servicio no sirve de nada sin un bus de sesión, y la activación de abajo se
+# instala en el directorio de `dbus`, de modo que es dependencia de ejecución.
+depends=(
+    'glibc'
+    'gcc-libs'
+    'dbus'
+)
+makedepends=(
+    'git'
+    'cargo'
+    'rust'
+)
+# Como el resto de los demonios del taller (ver vasak-connect), se compila desde
+# la cabeza de la rama por omisión: el repositorio todavía no publica tags, y el
+# `pkgver` se mantiene a mano con cada versión.
+source=("git+${url}.git")
+options=('!lto')
+sha256sums=('SKIP')
+install="$pkgname.install"
+
+# makepkg inyecta -flto global en CFLAGS/LDFLAGS, que rompe los crates que
+# compilan C o ensamblador. Cargo hace su propio LTO en el perfil release.
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    # El vendoring fija cada dependencia a lo que dice el candado, que es lo que
+    # hace que dos compilaciones del mismo commit den el mismo binario.
+    export RUSTUP_TOOLCHAIN=stable
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Un paquete no se compila para la máquina que lo compila.
+    #
+    # makepkg exporta RUSTFLAGS desde makepkg.conf, y en esta máquina de
+    # compilación /etc/makepkg.conf.d/rust.conf fija `-C target-cpu=native`. Eso
+    # compila para el CPU que está compilando: anda ahí y muere con SIGILL en
+    # cualquier equipo más viejo. `x86-64` es la línea base que todo equipo de 64
+    # bits implementa.
+    #
+    # CARGO_ENCODED_RUSTFLAGS gana sobre RUSTFLAGS en la precedencia de cargo,
+    # así que hay que sacarlo o fijar RUSTFLAGS acá se ignoraría en silencio.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    cargo build --frozen --release
+}
+
+check() {
+    cd "$srcdir/$pkgname"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo test --frozen --release
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    # El paquete del workspace se llama `vasak-health-daemon`, pero el binario
+    # que produce es `vasak-health-service` (ver el `[[bin]]` del daemon).
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # Unidad de usuario, no de sistema: el tiempo de pantalla es de quien tiene
+    # la sesión abierta, y el servicio escribe en su carpeta personal.
+    install -Dm644 "packaging/$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+
+    # Deja que el escritorio o Configuración lo arranquen a demanda si alguien
+    # consulta el tiempo de pantalla antes de que graphical-session.target haya
+    # llegado tan lejos.
+    install -Dm644 "packaging/ar.net.vasak.os.Health.service" \
+        "$pkgdir/usr/share/dbus-1/services/ar.net.vasak.os.Health.service"
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

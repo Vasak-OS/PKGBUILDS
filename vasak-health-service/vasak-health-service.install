@@ -1,0 +1,38 @@
+_enable() {
+    # Habilitada por omisión, pero querida por la sesión gráfica y no prendida a
+    # secas: arrancada antes no hay bus de sesión donde tomar el nombre.
+    #
+    # El enlace se escribe acá y no se envía en el paquete porque
+    # /etc/systemd/user es configuración —pacman no debe adueñarse de archivos
+    # ahí—.
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-health-service.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-health-service.service
+
+    systemctl daemon-reload 2>/dev/null || true
+}
+
+post_install() {
+    _enable
+    cat <<'EOF'
+:: El servicio de salud queda activo con la próxima sesión gráfica y empieza a
+   medir el tiempo de pantalla por aplicación.
+
+   Se apaga desde Configuración (`screen_time.enabled` en `vasak.conf`); el
+   servicio sigue corriendo pero deja de contar.
+EOF
+}
+
+post_upgrade() {
+    _enable
+    systemctl --user try-restart vasak-health-service.service 2>/dev/null || true
+}
+
+pre_remove() {
+    systemctl --user stop vasak-health-service.service 2>/dev/null || true
+}
+
+post_remove() {
+    rm -f /etc/systemd/user/graphical-session.target.wants/vasak-health-service.service
+    systemctl daemon-reload 2>/dev/null || true
+}
