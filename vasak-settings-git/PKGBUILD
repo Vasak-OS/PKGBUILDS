@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.37.0
+pkgver=0.37.1
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
@@ -42,6 +42,12 @@ depends=(
     # auditoría con `readelf` porque no se enlaza: son guiones que se ejecutan
     # por nombre.
     'xdg-utils'
+    # `wlr-randr`, de donde la pantalla de monitores saca la frecuencia real de
+    # cada modo y la disposición actual. Sin él la detección se cae al respaldo
+    # del kernel, que sólo lee la resolución y dejaba todos los modos en 60 Hz
+    # (#147). No lleva auditoría con `readelf` porque no se enlaza: se ejecuta
+    # por nombre como subproceso.
+    'wlr-randr'
 )
 # La pantalla de Actualizaciones le pregunta a `vasak-update --json`; sin él
 # dice qué falta en vez de mostrarse vacía. Opcional y no dependencia: el
