@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.38.1
+pkgver=0.39.0
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
@@ -53,7 +53,10 @@ depends=(
 # dice qué falta en vez de mostrarse vacía. Opcional y no dependencia: el
 # resto de la configuración funciona igual sin el aviso, y el metapaquete del
 # escritorio ya lo trae.
-optdepends=('vasak-update: para ver y configurar el aviso de actualizaciones')
+optdepends=('vasak-update: para ver y configurar el aviso de actualizaciones'
+            'ddcutil: brillo de los monitores externos (DDC/CI)'
+            'wlsunset: luz nocturna'
+            'power-profiles-daemon: perfiles de energía')
 
 makedepends=(
     'git'
