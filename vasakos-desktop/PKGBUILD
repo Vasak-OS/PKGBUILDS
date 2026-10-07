@@ -87,7 +87,7 @@ pkgname=vasakos-desktop
 #   Major  cambia lo que **es** el escritorio: reemplazar el compositor, el
 #          gestor de sesión, algo que redefine el conjunto.
 #   Minor  entra o sale una aplicación o un componente de la lista. Es el caso
-#          normal, y es el de esta versión: entró `vasak-update`.
+#          normal, y es el de esta versión: entró `vasak-health-service`.
 #   Fix    la lista queda igual y hay que rehacer el paquete por otra cosa: una
 #          corrección en este archivo que no toque `depends`.
 #
@@ -105,7 +105,7 @@ pkgname=vasakos-desktop
 # ya existieron, y así ninguna versión publicada parece haber ido para atrás.
 # `vercmp 1-11 1.11.0-1` da -1, así que las máquinas con la anterior instalada
 # actualizan.
-pkgver=1.15.0
+pkgver=1.16.0
 pkgrel=1
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
@@ -349,6 +349,12 @@ depends=(
   # declara acá porque el escritorio depende de que exista un backend gráfico.
   pinentry
   vasak-flare-daemon
+
+  # El tiempo de pantalla por aplicación: el escritorio le empuja las muestras
+  # (foco e inactividad) por D-Bus y el servicio lleva la cuenta, el almacén y
+  # las categorías. Sin él, el mosaico y el tablero de tiempo de pantalla del
+  # escritorio quedan vacíos.
+  vasak-health-service
 
   vasak-terminal
   vasak-file-manager
