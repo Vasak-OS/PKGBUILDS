@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-wireplumber-modules
-pkgver=0.2.0.r1.ga5633f0
+pkgver=0.3.0.r34.gf5d401f
 pkgrel=1
 pkgdesc="Módulos de WirePlumber de VasakOS"
 arch=('x86_64')
