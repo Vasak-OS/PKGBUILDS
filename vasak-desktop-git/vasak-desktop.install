@@ -4,6 +4,22 @@ post_install() {
 }
 post_upgrade() {
   post_install
+
+  # El escritorio es un servicio de usuario (vasak-desktop.service), así que
+  # después de actualizar sigue corriendo el binario viejo hasta el próximo
+  # login y la corrección recién se ve tras reiniciar sesión.
+  #
+  # `--machine <usuario>@.host` es cómo se llega desde root al systemd de una
+  # sesión: el hook de pacman corre como root y un `systemctl --user` a secas
+  # no alcanza la sesión gráfica. Se hace sólo para quien tenga sesión activa,
+  # y con `try-restart` (reinicia sólo si está corriendo) sin abortar si falla:
+  # esto también corre en el chroot del instalador, donde no hay ninguna.
+  for usuario in $(loginctl list-users --no-legend 2>/dev/null \
+                   | awk '$4 == "active" { print $2 }'); do
+      systemctl --user --machine="$usuario@.host" daemon-reload 2>/dev/null || true
+      systemctl --user --machine="$usuario@.host" \
+          try-restart vasak-desktop.service 2>/dev/null || true
+  done
 }
 post_remove() {
   gtk-update-icon-cache -q -t -f usr/share/icons/hicolor
