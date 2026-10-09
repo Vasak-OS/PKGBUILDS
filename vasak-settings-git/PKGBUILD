@@ -48,6 +48,11 @@ depends=(
     # (#147). No lleva auditoría con `readelf` porque no se enlaza: se ejecuta
     # por nombre como subproceso.
     'wlr-randr'
+    # `fastfetch`, que el editor de la pantalla de Fastfetch ejecuta para la
+    # vista previa (`fastfetch --pipe`) y para leer y escribir el emblema del
+    # usuario (#168). No lleva auditoría con `readelf` porque no se enlaza: se
+    # ejecuta por nombre como subproceso.
+    'fastfetch'
 )
 # La pantalla de Actualizaciones le pregunta a `vasak-update --json`; sin él
 # dice qué falta en vez de mostrarse vacía. Opcional y no dependencia: el
