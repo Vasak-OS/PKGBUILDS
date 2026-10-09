@@ -86,7 +86,13 @@ options=('!lto')
 
 prepare() {
     cd "$srcdir/$pkgname"
-    bun install
+    # `node_modules` se borra antes de instalar: `bun install` no saca lo que
+    # el `bun.lock` ya no trae, y un paquete que sobró de una compilación
+    # anterior rompe el chequeo de versiones de `tauri build` (pasó con
+    # `@tauri-apps/plugin-shell` en vasak-terminal). `--frozen-lockfile`
+    # instala exactamente lo que probó el CI.
+    rm -rf node_modules
+    bun install --frozen-lockfile
 }
 
 build() {
