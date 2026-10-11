@@ -105,7 +105,7 @@ pkgname=vasakos-desktop
 # ya existieron, y así ninguna versión publicada parece haber ido para atrás.
 # `vercmp 1-11 1.11.0-1` da -1, así que las máquinas con la anterior instalada
 # actualizan.
-pkgver=1.16.0
+pkgver=1.17.0
 pkgrel=1
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
@@ -226,11 +226,19 @@ depends=(
   # resuelve por `systemd-resolved`, y `systemd-resolvconf` es el puente para
   # que un cliente de VPN que llama a `resolvconf` le hable a él.
   #
-  # `bluez` y `bluez-utils` **no** están: los pone el instalador cuando detecta
-  # un adaptador. Una máquina sin Bluetooth cargaba 5,5 MiB y un servicio para
-  # nada, y la pantalla de Bluetooth de Ajustes ya se esconde sin adaptador.
-  # Igual con `wpa_supplicant` —lo pide `networkmanager`— y con `modemmanager`,
-  # que es para banda ancha móvil.
+  # Bluetooth de fábrica. `bluez` trae el stack y `bluez-utils` el
+  # `bluetoothctl` y el servicio `bluetooth.service`. Antes no estaban —los
+  # ponía el instalador cuando detectaba un adaptador—, pero esa detección
+  # dejaba sin Bluetooth a toda instalación donde fallara (ver
+  # vasak-installer#79): un adaptador USB enchufado después, o un chip que el
+  # medio live no ató, quedaba sin stack y sin forma de arreglarlo desde el
+  # escritorio. Se decidió que vengan siempre con el escritorio: son 5,5 MiB, la
+  # pantalla de Bluetooth de Ajustes ya se esconde sola sin adaptador, y así la
+  # ISO y el sistema instalado quedan iguales.
+  bluez
+  bluez-utils
+  # `wpa_supplicant` —lo pide `networkmanager`— y `modemmanager` —banda ancha
+  # móvil— siguen sin declararse acá.
 
   # DESKTOP
 
