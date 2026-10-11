@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.30
+pkgver=0.5.31
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -170,6 +170,11 @@ check() {
     # `.pacnew` en un equipo que venía de otra distribución.
     VSK_PKGBUILD="$startdir/PKGBUILD" VSK_INSTALL="$startdir/$install" \
         ./pruebas/identidad-del-sistema.sh || return 1
+
+    # Que los esquemas que se instalan se puedan leer: el texto principal, el
+    # atenuado y el que va sobre los colores de marca, a 4,5:1 en las dos
+    # variantes. El atenuado no lo corrige nadie después.
+    ./pruebas/esquemas-legibles.sh || return 1
 
     local vasak_apps gtk3 gtk4 esquema
     # La familia de `apps` en vasak.conf, sin comillas.
