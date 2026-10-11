@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.31
+pkgver=0.5.32
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -175,6 +175,11 @@ check() {
     # atenuado y el que va sobre los colores de marca, a 4,5:1 en las dos
     # variantes. El atenuado no lo corrige nadie después.
     ./pruebas/esquemas-legibles.sh || return 1
+
+    # Que la salida de audio HDMI se pueda elegir al conectar el monitor: que el
+    # drop-in de WirePlumber esté, sea SPA-JSON válido, prefiera HDMI en ALSA y
+    # no pise el Bluetooth. Sin él, el sink HDMI no se crea (vasak-desktop#230).
+    ./pruebas/salida-hdmi.sh || return 1
 
     local vasak_apps gtk3 gtk4 esquema
     # La familia de `apps` en vasak.conf, sin comillas.
