@@ -2,7 +2,7 @@
 
 pkgname=vasak-settings
 pkgver=0.47.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -17,6 +17,10 @@ depends=(
     'libsoup3'
     'webkit2gtk-4.1'
     'dbus'
+    # ddcutil: brillo de monitores externos por DDC/CI. Se invoca por CLI (no se
+    # enlaza, por eso no sale en readelf); va igual porque sin el binario el
+    # control de brillo de pantallas externas no funciona.
+    'ddcutil'
     # La base de C que enlaza el binario, auditada con `readelf -d`: libc, libm y
     # el cargador (glibc), y libgcc_s para desenrollar la pila (libgcc). Llegan
     # en cualquier sistema, pero lo que se enlaza se declara.

@@ -2,7 +2,7 @@
 
 pkgname=vasak-desktop
 pkgver=1.65.2
-pkgrel=1
+pkgrel=2
 pkgdesc="Desktop for VasakOS"
 arch=('x86_64')
 url="https://github.com/Vasak-OS/$pkgname"
@@ -21,6 +21,10 @@ depends=(
     'hicolor-icon-theme'
     'libsoup3'
     'webkit2gtk-4.1'
+    # ddcutil: brillo de monitores externos por DDC/CI. Se invoca por CLI (no se
+    # enlaza, por eso no sale en readelf); va igual porque sin el binario el
+    # control de brillo de pantallas externas no funciona.
+    'ddcutil'
     # El tiempo de pantalla mira la inactividad por ext-idle-notify-v1 (readelf: libwayland-client).
     'wayland'
     # El volumen y el perfil de audio Bluetooth leen `pw-dump --monitor`.
