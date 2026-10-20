@@ -66,7 +66,7 @@ optdepends=('vasak-update: para ver y configurar el aviso de actualizaciones'
             'ddcutil: brillo de los monitores externos (DDC/CI)'
             'wlsunset: luz nocturna'
             'power-profiles-daemon: perfiles de energía'
-            'vasak-assistance: la pantalla Asistente (Lince); no viene instalado de fábrica')
+            'vasak-assistant: la pantalla Asistente (Lince); no viene instalado de fábrica')
 
 makedepends=(
     'git'
