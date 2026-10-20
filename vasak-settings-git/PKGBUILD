@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-settings
-pkgver=0.53.0
+pkgver=0.54.0
 pkgrel=1
 pkgdesc="Settings for VasakOS"
 arch=('x86_64')
@@ -65,7 +65,8 @@ depends=(
 optdepends=('vasak-update: para ver y configurar el aviso de actualizaciones'
             'ddcutil: brillo de los monitores externos (DDC/CI)'
             'wlsunset: luz nocturna'
-            'power-profiles-daemon: perfiles de energía')
+            'power-profiles-daemon: perfiles de energía'
+            'vasak-assistance: la pantalla Asistente (Lince); no viene instalado de fábrica')
 
 makedepends=(
     'git'
