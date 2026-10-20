@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-mail
-pkgver=0.25.0
+pkgver=0.26.0
 pkgrel=1
 pkgdesc="Mail client for VasakOS: read the mail of your connected accounts."
 arch=('x86_64')
@@ -46,6 +46,14 @@ depends=(
     #  0.10.0  `GetAttachment`, que es de donde salen los bytes de un adjunto
     #          recibido, y el aviso de si llegó cortado. Sin esa versión el
     #          botón de guardar no tiene a quién pedirle el archivo.
+    #  0.51.0  `GetMessage` trae el estado S/MIME de la firma (firmante) y el
+    #          borrador acepta `firmar`. Sin esa versión el distintivo de firma
+    #          no tiene de dónde salir y el toggle de firmar no hace nada.
+    #  0.52.0  `GetMessage` agrega al estado S/MIME el del cifrado (abierto / no
+    #          se pudo abrir). Es lo que dibuja el candado y lo que decide no
+    #          citar un cuerpo que no se pudo descifrar al responder. Sin esa
+    #          versión el campo no existe y la ventana no sabe si un mensaje
+    #          venía cifrado.
     #
     # Desde 0.11.0 el servicio lee las preferencias que escribe esta ventana.
     # No cambia ninguna firma —el archivo es el contrato— así que no mueve el
@@ -60,7 +68,7 @@ depends=(
     # argumento de más —o lee una lista donde hay un booleano— y lo que se ve es
     # un error en lugar del correo, sin nada que diga que lo que falta es
     # actualizar el otro paquete.
-    'vasak-accounts>=0.10.0'
+    'vasak-accounts>=0.52.0'
 )
 
 makedepends=(
