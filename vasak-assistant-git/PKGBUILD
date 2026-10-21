@@ -1,0 +1,87 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-assistant
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="Lince, the resident AI assistant of VasakOS (local model by default, optional memory)"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL-3.0-or-later')
+# Opcional: no está en archiso, ni en grupos o metapaquetes, ni en el `depends`
+# de nada del sistema base. Se instala sólo si la persona lo pide.
+#
+# Auditado con `readelf -d` sobre el binario (no `ldd`): NEEDED trae libc, libm,
+# el cargador (glibc) y libgcc_s (libgcc). Es `libgcc` y no `gcc-libs`, como en
+# vasak-accounts: no enlaza libstdc++ ni nada del resto de gcc-libs. TLS va por
+# rustls y D-Bus por zbus (Rust puro): no hay bibliotecas de sistema más. El
+# motor de grafos de la memoria (Grafeo) va embebido en el binario, así que no
+# suma ninguna dependencia de sistema.
+depends=(
+    'glibc'
+    'libgcc'
+    'dbus'
+    # Es el Secret Service donde se guarda la clave de un proveedor remoto y
+    # donde el servicio la lee. Va en `depends` y no en `optdepends` porque el
+    # paquete tiene que traer todo lo que necesita (vasak-assistant#1): con un
+    # backend remoto, sin llavero el servicio no puede tener su clave. No cuesta
+    # nada: vasak-keyring ya está en toda instalación de VasakOS. Con Ollama
+    # local, la opción por omisión, no se usa.
+    'vasak-keyring'
+)
+optdepends=('ollama: local model backend used by default')
+# Rust >= 1.99: Grafeo, el motor de la memoria, lo pide.
+makedepends=('git' 'cargo' 'rust>=1.99')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+# makepkg inyecta -flto global en CFLAGS/LDFLAGS, y ese bitcode no lo resuelve
+# el enlazador de rustc en los crates que compilan C o ensamblador. Cargo hace
+# su propia LTO con el perfil release del proyecto: la de makepkg sobra.
+options=('!lto')
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Un paquete no se compila para la máquina que lo compila: makepkg exporta
+    # RUSTFLAGS desde makepkg.conf y acá fija `-C target-cpu=native`, que da
+    # SIGILL en cualquier CPU más vieja. `x86-64` es la línea base. El nivel de
+    # optimización y la LTO no dependen del modelo de CPU y quedan como los fija
+    # el Cargo.toml.
+    #
+    # CARGO_ENCODED_RUSTFLAGS gana sobre RUSTFLAGS: hay que sacarlo o fijar
+    # RUSTFLAGS acá se ignoraría en silencio.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    # `--locked`: un candado desfasado corta la compilación en vez de resolverse
+    # solo y en silencio.
+    cargo build --release --locked -p vasak-assistant-daemon
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    # La puerta de vasak-keyring exige exactamente esta ruta, y que el binario
+    # sea legible.
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    install -Dm644 "packaging/$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+
+    # Activación por D-Bus: quien le hable antes de que arranque la sesión
+    # gráfica lo levanta. No se habilita nada a mano; la unidad lo hace con
+    # graphical-session.target.
+    install -Dm644 "packaging/ar.net.vasak.os.Assistant.service" \
+        "$pkgdir/usr/share/dbus-1/services/ar.net.vasak.os.Assistant.service"
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}
+
+pkgver() {
+    # La versión es la que declara el proyecto (`[workspace.package]` de la
+    # raíz), no un número escrito acá que alguien tenga que bumpar. Ver
+    # lib/versiones.sh y vasak-keyring-git para el porqué y sus límites.
+    cd "$srcdir/$pkgname" || return 1
+    source "$startdir/../lib/versiones.sh"
+    version_de_arbol "$srcdir/$pkgname"
+}
