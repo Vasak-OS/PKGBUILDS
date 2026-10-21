@@ -14,48 +14,53 @@ PAM_BACKUP=/etc/pam.d/system-login.vasak-bak
 # logging in. What could is a malformed file, and that is what the checks below
 # are about.
 configure_pam() {
-    # Already configured — by us, by hand, or in the image.
-    if grep -rqs pam_vasak_keyring /etc/pam.d/; then
-        return 0
-    fi
-
     if [ ! -f "$PAM_FILE" ]; then
         return 1
     fi
 
-    # The module has to run after the password has been asked for, which is what
-    # these includes do. Without them there is nothing to anchor to and the file
-    # is not the one this expects.
+    # Las anclas: cada línea va después de su `include system-auth`, cuando la
+    # contraseña ya se pidió (auth) o ya se cambió (password); sin esos includes
+    # no hay dónde anclar y el archivo no es el que esperamos. La de `session`
+    # va al final (ver abajo), así que no necesita ancla propia.
     grep -Eq '^[[:space:]]*auth[[:space:]]+include[[:space:]]+system-auth' "$PAM_FILE" || return 1
+    grep -Eq '^[[:space:]]*password[[:space:]]+include[[:space:]]+system-auth' "$PAM_FILE" || return 1
     grep -Eq '^[[:space:]]*session[[:space:]]+include[[:space:]]+system-auth' "$PAM_FILE" || return 1
+
+    # Ya están las tres: nada que hacer. Es por línea y no «hay alguna», porque
+    # una instalación anterior dejó sólo `auth` y `session` (sin `password`,
+    # vasak-keyring#38), y al actualizar hay que agregar la que falta.
+    if [ "$(grep -c pam_vasak_keyring "$PAM_FILE")" -eq 3 ]; then
+        return 0
+    fi
 
     local tmp
     tmp=$(mktemp "$PAM_FILE.vasak-XXXXXX") || return 1
 
-    # `auth` goes right after its include: by then the password has been typed.
-    #
-    # `session` goes at the very end, after pam_systemd. That is not cosmetic:
-    # pam_systemd is what creates /run/user/<uid>, and the daemon's bus socket
-    # lives there. Ordered before it, the module has nowhere to deliver the
-    # password to.
-    awk '
+    # Se parte de las líneas SIN pam_vasak_keyring —así da igual que haya 0, 2 o
+    # 3 de una instalación anterior— y se insertan las tres en su ancla:
+    #  - `auth`, después de su include: para entonces la contraseña ya se escribió;
+    #  - `password`, después de su include: para entonces ya cambió, y se re-cifra
+    #    la base con la nueva (vasak-keyring#38);
+    #  - `session`, al final, después de pam_systemd: ese módulo crea
+    #    /run/user/<uid>, donde vive el socket del demonio. Antes de él no hay
+    #    dónde entregar la contraseña.
+    grep -v pam_vasak_keyring "$PAM_FILE" | awk '
         { print }
-        /^[[:space:]]*auth[[:space:]]+include[[:space:]]+system-auth/ && !done_auth {
-            print "auth       optional   pam_vasak_keyring.so"
-            done_auth = 1
+        /^[[:space:]]*auth[[:space:]]+include[[:space:]]+system-auth/ && !a {
+            print "auth       optional   pam_vasak_keyring.so"; a = 1
+        }
+        /^[[:space:]]*password[[:space:]]+include[[:space:]]+system-auth/ && !p {
+            print "password   optional   pam_vasak_keyring.so"; p = 1
         }
         END { print "session    optional   pam_vasak_keyring.so" }
-    ' "$PAM_FILE" > "$tmp" || { rm -f "$tmp"; return 1; }
+    ' > "$tmp" || { rm -f "$tmp"; return 1; }
 
-    # Two lines added, nothing else touched: every original line has to still be
-    # there, in the same order, and the count has to be exactly two higher.
-    local before after
-    before=$(wc -l < "$PAM_FILE")
-    after=$(wc -l < "$tmp")
-
-    if [ "$after" -ne "$((before + 2))" ] ||
-       ! grep -c pam_vasak_keyring "$tmp" | grep -qx 2 ||
-       ! diff <(grep -v pam_vasak_keyring "$tmp") "$PAM_FILE" > /dev/null; then
+    # Tres líneas y nada más tocado: tiene que haber exactamente tres, y lo que
+    # no es pam_vasak_keyring tiene que quedar idéntico a las líneas sin
+    # pam_vasak_keyring del original —así la comprobación vale tanto para una
+    # instalación limpia como para una que ya tenía dos—.
+    if [ "$(grep -c pam_vasak_keyring "$tmp")" -ne 3 ] ||
+       ! diff <(grep -v pam_vasak_keyring "$tmp") <(grep -v pam_vasak_keyring "$PAM_FILE") > /dev/null; then
         rm -f "$tmp"
         return 1
     fi
@@ -67,7 +72,7 @@ configure_pam() {
     # thing that could actually lock somebody out.
     mv -f "$tmp" "$PAM_FILE" || { rm -f "$tmp"; return 1; }
 
-    echo ">>> vasak-keyring: auto-desbloqueo configurado en $PAM_FILE"
+    echo ">>> vasak-keyring: auto-desbloqueo y re-cifrado configurados en $PAM_FILE"
     echo "    (copia del archivo anterior en $PAM_BACKUP)"
     return 0
 }
@@ -109,13 +114,14 @@ post_install() {
     llavero queda bloqueado y las aplicaciones no van a poder guardar ni
     leer contraseñas.
 
-    Agregá estas dos líneas a mano:
+    Agregá estas tres líneas a mano:
 
         auth       optional   pam_vasak_keyring.so     (después del "auth include system-auth")
+        password   optional   pam_vasak_keyring.so     (después del "password include system-auth")
         session    optional   pam_vasak_keyring.so     (al final del archivo, después de pam_systemd)
 
-    Hacen falta las dos: `auth` toma la contraseña recién escrita y
-    `session` es la que se la entrega al demonio.
+    `auth` toma la contraseña recién escrita, `session` se la entrega al
+    demonio, y `password` re-cifra la base al cambiar la contraseña.
 
     Detalle en /usr/share/doc/vasak-keyring/pam/README.md
 
