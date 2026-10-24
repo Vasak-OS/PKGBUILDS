@@ -1,0 +1,85 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-preload
+pkgver=0.2.1
+pkgrel=1
+pkgdesc="VasakOS preload: precarga las aplicaciones que vas a abrir según cómo las usás"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL-3.0-only')
+# Los dos binarios sólo enlazan glibc y libgcc —auditado con `readelf -d`, no
+# con `ldd`: en NEEDED aparecen libc, libm y libgcc_s—. SQLite va incluido en el
+# binario (sqlx con `bundled`), así que no se depende de `sqlite`. `zbus` habla
+# D-Bus en Rust puro y no enlaza libdbus, pero el servicio no arranca sin un bus
+# de sesión, así que `dbus` es dependencia de ejecución.
+depends=(
+    'glibc'
+    'libgcc'
+    'dbus'
+)
+makedepends=(
+    'git'
+    'cargo'
+    'rust'
+)
+# Como el resto de los demonios del taller, se compila desde la cabeza de la
+# rama por omisión: el repositorio no publica tags, y el `pkgver` se mantiene a
+# mano con cada versión.
+source=("git+${url}.git")
+options=('!lto')
+sha256sums=('SKIP')
+install="$pkgname.install"
+
+# makepkg inyecta -flto global en CFLAGS/LDFLAGS, que rompe los crates que
+# compilan C (libsqlite3-sys compila SQLite). Cargo hace su propio LTO en el
+# perfil release.
+
+prepare() {
+    cd "$srcdir/$pkgname"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Un paquete no se compila para la máquina que lo compila: makepkg.conf
+    # puede fijar `-C target-cpu=native`, que muere con SIGILL en un equipo más
+    # viejo. `x86-64` es la línea base. CARGO_ENCODED_RUSTFLAGS gana sobre
+    # RUSTFLAGS, así que hay que sacarlo.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    cargo build --frozen --release -p vasak-preload-daemon -p vasak-preload-cli
+}
+
+check() {
+    cd "$srcdir/$pkgname"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo test --frozen --release --workspace
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    # El crate del daemon se llama `vasak-preload-daemon`, pero el binario es
+    # `vasak-preload` (ver el `[[bin]]`).
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+    install -Dm755 "target/release/$pkgname-cli" "$pkgdir/usr/bin/$pkgname-cli"
+
+    # Unidad de usuario, no de sistema (vasak-preload#28): cada sesión escanea
+    # sus propios procesos, guarda su modelo en su carpeta y precarga con sus
+    # credenciales. Sin usuario de sistema, sin sysusers y sin política D-Bus.
+    install -Dm644 "packaging/$pkgname.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+
+    # La configuración es opcional: sin archivo arranca con los valores por
+    # omisión. El ejemplo queda como documentación para copiar a
+    # /etc/vasak-preload/config.toml o ~/.config/vasak-preload/config.toml.
+    install -Dm644 docs/config.example.toml \
+        "$pkgdir/usr/share/doc/$pkgname/config.example.toml"
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

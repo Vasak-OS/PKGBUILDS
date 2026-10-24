@@ -1,0 +1,39 @@
+_enable() {
+    # Habilitada por omisión para todas las sesiones gráficas (vasak-preload#28):
+    # querida por la sesión y no prendida a secas, porque antes no hay bus de
+    # sesión donde tomar el nombre.
+    #
+    # El enlace se escribe acá y no se envía en el paquete porque
+    # /etc/systemd/user es configuración —pacman no debe adueñarse de archivos
+    # ahí—.
+    mkdir -p /etc/systemd/user/graphical-session.target.wants
+    ln -sf /usr/lib/systemd/user/vasak-preload.service \
+        /etc/systemd/user/graphical-session.target.wants/vasak-preload.service
+
+    systemctl daemon-reload 2>/dev/null || true
+}
+
+post_install() {
+    _enable
+    cat <<'MSG'
+:: La precarga queda activa con la próxima sesión gráfica. Aprende qué
+   aplicaciones abrís una después de la otra y las deja listas en memoria.
+
+   Para apagarla en tu sesión:  systemctl --user mask vasak-preload.service
+   Para ver qué aprendió:       vasak-preload-cli stats
+MSG
+}
+
+post_upgrade() {
+    _enable
+    systemctl --user try-restart vasak-preload.service 2>/dev/null || true
+}
+
+pre_remove() {
+    systemctl --user stop vasak-preload.service 2>/dev/null || true
+}
+
+post_remove() {
+    rm -f /etc/systemd/user/graphical-session.target.wants/vasak-preload.service
+    systemctl daemon-reload 2>/dev/null || true
+}
