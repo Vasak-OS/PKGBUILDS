@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-preload
-pkgver=0.2.1
+pkgver=0.2.2
 pkgrel=1
 pkgdesc="VasakOS preload: precarga las aplicaciones que vas a abrir según cómo las usás"
 arch=('x86_64')
