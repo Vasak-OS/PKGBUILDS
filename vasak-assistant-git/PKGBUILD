@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-assistant
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Lince, the resident AI assistant of VasakOS (local model by default, optional memory)"
 arch=('x86_64')
@@ -26,7 +26,9 @@ depends=(
     # backend remoto, sin llavero el servicio no puede tener su clave. No cuesta
     # nada: vasak-keyring ya está en toda instalación de VasakOS. Con Ollama
     # local, la opción por omisión, no se usa.
-    'vasak-keyring'
+    # >= 0.10.0: la puerta por esquema protege la clave y la llave de la memoria
+    # (vasak-keyring#55); con una anterior el ítem queda común.
+    'vasak-keyring>=0.10.0'
 )
 optdepends=('ollama: local model backend used by default')
 # Rust >= 1.99: Grafeo, el motor de la memoria, lo pide.
