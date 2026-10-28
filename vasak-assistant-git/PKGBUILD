@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-assistant
-pkgver=0.3.1
+pkgver=0.3.2
 pkgrel=1
 pkgdesc="Lince, the resident AI assistant of VasakOS (local model by default, optional memory)"
 arch=('x86_64')
