@@ -50,6 +50,11 @@ depends=(
     'zip'
     'unzip'
     'tar'
+    # cpio para comprimir en ese formato; libarchive trae `bsdtar`, con el que se
+    # EXTRAE cpio de forma segura (GNU cpio honra rutas absolutas y `..` → path
+    # traversal; bsdtar las sanitiza).
+    'cpio'
+    'libarchive'
     'dbus'
     # `xdg-open` y `xdg-mime`: abrir con la aplicación predeterminada y saber
     # cuál es. Se lanzaban sin declararse (#105).
