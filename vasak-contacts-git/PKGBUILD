@@ -29,7 +29,11 @@ depends=(
     # No hace falta nada más para hablar CardDAV. El TLS es rustls, que va
     # compilado adentro: no hay un openssl del sistema en el binario. Verificado
     # con readelf sobre el resultado, no con ldd.
-    'vasak-accounts'
+    #
+    # Piso 0.55.0: `GetContact`/`PutContact` ganaron la dirección postal (`ADR`),
+    # que es lo que edita el formulario. Con un servicio anterior el campo no
+    # existe y las direcciones no se guardan.
+    'vasak-accounts>=0.55.0'
 )
 
 makedepends=(
