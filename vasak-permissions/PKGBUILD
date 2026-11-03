@@ -34,6 +34,9 @@ depends=(
     # de escritorio (ver `vasak.portal` más abajo), y sin el portal ese archivo
     # no lo lee nadie.
     'xdg-desktop-portal'
+    # No se enlaza: carga el perfil AppArmor del agente (y los de excepción que
+    # el daemon escribe en runtime). Sin apparmor el perfil queda inerte.
+    'apparmor'
 )
 makedepends=('git' 'cargo' 'bun' 'rust')
 source=("git+${url}.git")
@@ -104,6 +107,12 @@ package() {
         "$pkgdir/usr/lib/systemd/system/vasak-permissions.service"
     install -Dm644 "packaging/vasak-permissions-agent.service" \
         "$pkgdir/usr/lib/systemd/user/vasak-permissions-agent.service"
+
+    # Le devuelve al agente la propiedad «sin red» que perdió al sacarle el
+    # endurecimiento seccomp del unit (upstream #100): AppArmor deniega inet sin
+    # romper el bwrap de glycin del diálogo. El hook de apparmor de pacman lo carga.
+    install -Dm644 "packaging/vasak-permissions-agent.apparmor" \
+        "$pkgdir/etc/apparmor.d/vasak-permissions-agent"
 
     # The agent also serves the desktop portal's permission dialog, so those
     # prompts look like the rest of VasakOS. The .portal file is how the portal
