@@ -27,6 +27,13 @@ depends=(
     'openssl'
     # Decide quién puede llegar a un token; el servicio rechaza todo sin él.
     'vasak-permissions'
+    # Las identidades S/MIME y OpenPGP (claves privadas y contraseñas) se guardan
+    # en el llavero bajo esquemas protegidos (`ar.net.vasak.os.SmimeKey` y
+    # `PgpKey`): sólo este servicio puede leerlos, y esa aislación la da el gate
+    # `PROTECTED_SCHEMAS` de vasak-keyring desde 0.12.5. Con un llavero más viejo
+    # cualquier aplicación podría leer las claves privadas del correo, así que el
+    # piso es duro, no «de casualidad».
+    'vasak-keyring>=0.12.5'
     # Quitar una cuenta pasa por polkit: se borra la credencial y se le avisa al
     # proveedor, y eso no se deshace. Sin polkit el servicio no puede preguntar y
     # el borrado falla.
