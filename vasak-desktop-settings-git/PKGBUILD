@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-desktop-settings
-pkgver=0.5.38
+pkgver=0.5.39
 pkgrel=1
 pkgdesc="Tools and Settings for Vasak desktop"
 arch=('x86_64')
@@ -342,11 +342,27 @@ package() {
     install -Dm644 "$srcdir/$pkgname/etc/sysctl.d/50-vasakos-auditoria.conf" \
         "$pkgdir/etc/sysctl.d/50-vasakos-auditoria.conf"
 
+    # El drop-in de ptrace estaba en el repo pero el `package()` nunca lo
+    # instalaba —sólo copiaba `auditoria`—: un sysctl de seguridad que no llegaba
+    # al equipo. Se agrega.
+    install -Dm644 "$srcdir/$pkgname/etc/sysctl.d/50-vasakos-ptrace.conf" \
+        "$pkgdir/etc/sysctl.d/50-vasakos-ptrace.conf"
+
+    # Endurecimiento de red del escritorio —redirects, rp_filter, paquetes
+    # marcianos— y sin core de procesos setuid. Lo explica el propio archivo.
+    install -Dm644 "$srcdir/$pkgname/etc/sysctl.d/50-vasakos-red.conf" \
+        "$pkgdir/etc/sysctl.d/50-vasakos-red.conf"
+
     # Y el tope del diario, que de fábrica son 50 MB heredados de
     # `cachyos-settings`: poco para un sistema que corre 1592 perfiles en modo
     # aviso y además apaga el cupo de printk a propósito.
     install -Dm644 "$srcdir/$pkgname/etc/systemd/journald.conf.d/50-vasakos-diario.conf" \
         "$pkgdir/etc/systemd/journald.conf.d/50-vasakos-diario.conf"
+
+    # `/tmp` con nodev,nosuid: cachyos-settings se los saca al `tmp.mount` de
+    # systemd. Lo explica el propio archivo.
+    install -Dm644 "$srcdir/$pkgname/etc/systemd/system/tmp.mount.d/50-vasakos.conf" \
+        "$pkgdir/etc/systemd/system/tmp.mount.d/50-vasakos.conf"
     # Los helpers de credenciales de git por HTTPS: `gh` en github.com y
     # vasak-keyring en todos. Está explicado en el propio archivo.
     install -Dm644 "$srcdir/$pkgname/etc/gitconfig" "$pkgdir/etc/gitconfig"
@@ -355,6 +371,11 @@ package() {
     # instalaba nunca, así que cada conexión volvía a abrir la clave.
     install -Dm644 "$srcdir/$pkgname/etc/ssh/ssh_config.d/50-vasak-agent.conf" \
         "$pkgdir/etc/ssh/ssh_config.d/50-vasak-agent.conf"
+
+    # Endurecimiento del servidor SSH —root no, tiempos de gracia e inactividad—.
+    # Lo explica el propio archivo.
+    install -Dm644 "$srcdir/$pkgname/etc/ssh/sshd_config.d/50-vasakos-hardening.conf" \
+        "$pkgdir/etc/ssh/sshd_config.d/50-vasakos-hardening.conf"
     cp -r $srcdir/$pkgname/usr $pkgdir/
 
     # La regla de fontconfig se instala en `conf.avail` y se activa con un enlace
