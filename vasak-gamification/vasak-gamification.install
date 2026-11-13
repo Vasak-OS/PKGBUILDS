@@ -1,0 +1,24 @@
+post_install() {
+    # No se habilita: la capa viene apagada por omisión y el servicio se activa
+    # a demanda por D-Bus (ver el `.service` de activación), así que no hay nada
+    # que enlazar en graphical-session.target.wants. Sólo se avisa.
+    systemctl daemon-reload 2>/dev/null || true
+    cat <<'EOF'
+:: El servicio de gamificación queda instalado pero APAGADO. Se prende desde
+   Configuración (`gamification.enabled` en `vasak.conf`); dbus lo arranca solo
+   cuando un módulo emite un evento o Configuración consulta el progreso.
+EOF
+}
+
+post_upgrade() {
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl --user try-restart vasak-gamification-service.service 2>/dev/null || true
+}
+
+pre_remove() {
+    systemctl --user stop vasak-gamification-service.service 2>/dev/null || true
+}
+
+post_remove() {
+    systemctl daemon-reload 2>/dev/null || true
+}
