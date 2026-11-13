@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-gamification
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="VasakOS gamification service: system-wide XP, streaks and achievements"
 arch=('x86_64')
