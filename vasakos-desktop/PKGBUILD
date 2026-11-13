@@ -105,7 +105,7 @@ pkgname=vasakos-desktop
 # ya existieron, y así ninguna versión publicada parece haber ido para atrás.
 # `vercmp 1-11 1.11.0-1` da -1, así que las máquinas con la anterior instalada
 # actualizan.
-pkgver=1.18.0
+pkgver=1.19.0
 pkgrel=1
 pkgdesc="El escritorio de VasakOS: metapaquete con todo lo que forma el sistema"
 arch=('any')
@@ -363,6 +363,14 @@ depends=(
   # las categorías. Sin él, el mosaico y el tablero de tiempo de pantalla del
   # escritorio quedan vacíos.
   vasak-health-service
+
+  # La gamificación del sistema (XP, rachas, logros), un servicio chico que
+  # cualquier app puede alimentar emitiendo eventos por D-Bus; hoy el primer
+  # emisor son los recordatorios de salud. Va en base pero **apagado por
+  # omisión** y activado a demanda por D-Bus: no corre hasta que alguien lo
+  # prende desde Configuración. Está acá —y no como dependencia de health— para
+  # que sea reutilizable y no quede atado a un solo consumidor.
+  vasak-gamification
 
   # La precarga: aprende qué aplicaciones se abren una después de la otra y
   # deja sus archivos en memoria antes de que se abran. Es un servicio de
