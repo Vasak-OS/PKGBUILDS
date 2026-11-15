@@ -60,7 +60,7 @@ printf '\n\033[1mEl orden que produce build-all.sh\033[0m\n'
 # Se le pregunta al script de verdad y no se recalcula acá: una prueba que
 # reimplementa lo que prueba sólo comprueba que dos copias coincidan.
 mapfile -t orden < <(
-    ./build-all.sh --dry-run --no-check --no-repo 2>/dev/null |
+    ./build-all.sh --dry-run --no-check --no-repo --no-refresh-vcs 2>/dev/null |
         sed -n 's/^==> Will build [0-9]* package(s): //p' | tr ' ' '\n' | grep -v '^$'
 )
 

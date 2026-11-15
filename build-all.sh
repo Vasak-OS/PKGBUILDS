@@ -54,9 +54,16 @@
 #                         the 20 recipes they reached 8.4 GB, and the next
 #                         build re-clones from the remote anyway. A failed
 #                         build always keeps them.
-#       --refresh-vcs     Run `makepkg -o` on PKGBUILDs that carry a pkgver()
-#                         function, so their version reflects upstream HEAD
-#                         before the up-to-date check. Costs a source fetch.
+#       --no-refresh-vcs  Skip the `makepkg -o` that refreshes the version of
+#                         PKGBUILDs carrying a pkgver() function. By default
+#                         they ARE refreshed, so their version reflects upstream
+#                         HEAD before the up-to-date check — without it a -git
+#                         package whose static pkgver= happens to match what is
+#                         published is judged up to date and never rebuilt, even
+#                         as upstream moves on. The refresh costs a source fetch
+#                         per such recipe; this flag buys that back when you know
+#                         upstream has not changed. `--refresh-vcs` is still
+#                         accepted and is now a no-op.
 #       --no-check        Skip the check-all.sh pre-flight.
 #       --strict-check    Abort the whole run if any app fails the pre-flight,
 #                         instead of skipping just that package.
@@ -101,7 +108,7 @@ FORCE_ALL=0
 DRY_RUN=0
 ADOPT=0
 CLEAN_OLD=1
-REFRESH_VCS=0
+REFRESH_VCS=1
 USE_PACREPO=1
 OUTPUT=""
 PACREPO="${VASAKOS_REPO_DIR:-$WORKSPACE/repository-script/x86_64}"
@@ -123,7 +130,8 @@ while [[ $# -gt 0 ]]; do
     -s|--stop) STOP=1; shift ;;
     --no-prefer-git) PREFER_GIT=0; shift ;;
     --no-clean) CLEAN_OLD=0; shift ;;
-    --refresh-vcs) REFRESH_VCS=1; shift ;;
+    --refresh-vcs) REFRESH_VCS=1; shift ;;   # ya es el default; se acepta por compatibilidad
+    --no-refresh-vcs) REFRESH_VCS=0; shift ;;
     --keep-work) KEEP_WORK=1; shift ;;
     --no-check) CHECK=0; shift ;;
     --strict-check) STRICT_CHECK=1; shift ;;
