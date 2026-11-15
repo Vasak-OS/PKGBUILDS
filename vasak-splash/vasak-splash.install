@@ -1,0 +1,27 @@
+# El hook de mkinitcpio sólo toma efecto cuando se rearma el initramfs, y el
+# grupo `vasak-splash` se crea procesando sysusers.d. Los dos se hacen acá para
+# que el paquete ande apenas se instala, sin un paso manual que es fácil olvidar.
+#
+# `mkinitcpio -P` rearma todos los presets: es lo que mete el hook (y, por el
+# drop-in, reordena HOOKS). Es lento pero es el único momento en que el splash
+# empieza a dibujar en el arranque. Todo va con `|| true`: un fallo del rearmado
+# no debe abortar la instalación del paquete.
+
+post_install() {
+    systemd-sysusers vasak-splash.conf 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+    mkinitcpio -P 2>/dev/null || true
+}
+
+post_upgrade() {
+    systemd-sysusers vasak-splash.conf 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+    mkinitcpio -P 2>/dev/null || true
+}
+
+post_remove() {
+    # Sin el hook en disco, rearmar deja el initramfs sin el splash. El drop-in de
+    # HOOKS lo quita pacman (es `backup`), así que el array vuelve al previo.
+    systemctl daemon-reload 2>/dev/null || true
+    mkinitcpio -P 2>/dev/null || true
+}

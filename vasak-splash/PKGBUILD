@@ -1,0 +1,90 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+
+pkgname=vasak-splash
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Splash de arranque propio de VasakOS: dibuja el logo sobre DRM con dumb buffers, sin plymouth"
+arch=('x86_64')
+url="https://github.com/Vasak-OS/$pkgname"
+license=('GPL-3.0-or-later')
+# El binario es Rust puro: `drm` hace los ioctls de KMS/DRM él mismo (no enlaza
+# libdrm) y el logo va embebido como RGBA, así que no hay dependencia de imagen
+# en ejecución. Auditado con `readelf -d` sobre el binario release: enlaza sólo
+# libc.so.6 (glibc) y libgcc_s.so.1 (gcc-libs), nada más.
+depends=('glibc' 'gcc-libs')
+makedepends=('git' 'cargo' 'rust')
+# El hook corre dentro del initramfs; lo rearma `mkinitcpio -P` desde el
+# .install, que también necesita el runtime de mkinitcpio.
+depends+=('mkinitcpio')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+install="vasak-splash.install"
+
+# El drop-in de mkinitcpio **reemplaza** el array de HOOKS (mete `vasak-splash`
+# tras `kms`) y la config de ejemplo se instala como el archivo real: los dos son
+# `backup` para que una edición de quien usa el sistema no se pise en el upgrade.
+# OJO: ese drop-in asume el HOOKS base de VasakOS; una máquina con disco cifrado
+# (hook `encrypt`) tiene que ajustarlo a mano —lo dice el propio archivo—.
+backup=('etc/mkinitcpio.conf.d/50-vasak-splash.conf' 'etc/vasak-splash.conf')
+
+# Igual que los demás servicios del taller: el LTO global de makepkg mete -flto
+# en CFLAGS/LDFLAGS y los crates que compilan C o asm emiten bitcode que el
+# linker de rustc no resuelve. Rust ya hace su propio LTO por el perfil release.
+options=('!lto')
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Un paquete no se compila para la máquina que lo compila. makepkg exporta
+    # `-C target-cpu=native` desde /etc/makepkg.conf.d/rust.conf en este host, que
+    # emite AVX2/BMI2 y muere con SIGILL en cualquier x86-64 anterior a 2013. Y un
+    # splash de arranque tiene que correr en TODA máquina. `x86-64` es la línea
+    # base. CARGO_ENCODED_RUSTFLAGS le gana a RUSTFLAGS en cargo, así que se saca.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    cargo build --release --locked
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    # El daemon. Se llama `vasak-splashd` aunque el paquete sea `vasak-splash`,
+    # como el resto de los servicios del taller.
+    install -Dm755 "target/release/vasak-splashd" "$pkgdir/usr/bin/vasak-splashd"
+
+    # El hook de mkinitcpio: el `install` que mkinitcpio corre al armar el
+    # initramfs (decide qué meter) y el `hook` que corre en cada arranque.
+    install -Dm644 "packaging/initcpio-install" "$pkgdir/usr/lib/initcpio/install/vasak-splash"
+    install -Dm644 "packaging/initcpio-hook" "$pkgdir/usr/lib/initcpio/hooks/vasak-splash"
+
+    # El drop-in que mete `vasak-splash` tras `kms` en el array de HOOKS.
+    install -Dm644 "packaging/50-vasak-splash.conf" \
+        "$pkgdir/etc/mkinitcpio.conf.d/50-vasak-splash.conf"
+
+    # Camino alternativo al del initramfs: arrancar el splash en el sistema real
+    # antes del greeter. Se entrega **apagado** —el mecanismo principal es el hook
+    # de initramfs—; no encender los dos a la vez (pelean por el master del DRM).
+    install -Dm644 "packaging/vasak-splash-start.service" \
+        "$pkgdir/usr/lib/systemd/system/vasak-splash-start.service"
+
+    # El grupo `vasak-splash`, dueño del socket de control: el greeter tiene que
+    # estar en él para mandar `quit` (se cablea al integrar el greeter).
+    install -Dm644 "packaging/vasak-splash.sysusers" \
+        "$pkgdir/usr/lib/sysusers.d/vasak-splash.conf"
+
+    # La config de ejemplo, instalada como el archivo real (todas las claves son
+    # opcionales; sin él, el daemon usa los valores por omisión).
+    install -Dm644 "packaging/vasak-splash.conf.example" \
+        "$pkgdir/etc/vasak-splash.conf"
+}
+
+pkgver() {
+    # La versión sale del `Cargo.toml` del proyecto, no de un número escrito acá
+    # que alguien tenga que acordarse de bumpar. Sin sufijo `.rN.gHASH`: el `-git`
+    # del directorio marca procedencia (sale del repo, no de un release .deb), no
+    # la convención de versions de VCS.
+    cd "$srcdir/$pkgname" || return 1
+    # shellcheck source=../lib/versiones.sh
+    source "$startdir/../lib/versiones.sh"
+    version_de_arbol "$srcdir/$pkgname"
+}
