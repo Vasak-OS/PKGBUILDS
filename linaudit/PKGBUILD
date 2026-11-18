@@ -1,0 +1,73 @@
+# Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
+# linaudit es un proyecto externo (Alexia Michelle, AGPL-3.0). Se empaqueta en el
+# repositorio de VasakOS en vez de tomarlo de AUR porque instalar desde AUR en la
+# máquina de quien usa el sistema es justamente lo que la política de la
+# distribución evita.
+
+pkgname=linaudit
+pkgver=0.3.1
+pkgrel=1
+# Upstream todavía no publica releases ni tags: se fija el commit exacto que se
+# revisó, no un HEAD que cambia entre compilaciones. Al subir de versión se
+# bumpan `pkgver` y `_commit` juntos. Por eso el directorio no lleva sufijo
+# `-git`: no deriva la versión del árbol, la clava acá.
+_commit=ecf16d1bc98b7d9c2d17eefbc0b865089f86773b
+pkgdesc="Auditoría de seguridad de solo lectura para Linux, con puntaje de 1 a 10"
+arch=('x86_64')
+url="https://github.com/alexiarstein/linaudit"
+license=('AGPL-3.0-or-later')
+# `readelf -d` sobre el binario: sólo gcc-libs (libgcc_s) y glibc (libc, libm).
+depends=('glibc' 'gcc-libs')
+makedepends=('git' 'cargo' 'rust')
+source=("$pkgname::git+$url.git#commit=$_commit")
+# El commit fija el contenido y git lo verifica por su sha; no hay tarball que
+# hashear.
+sha256sums=('SKIP')
+# Los edita quien administra el equipo: pacman no los pisa en un upgrade.
+backup=('etc/linaudit/config.toml' 'etc/linaudit/waivers.conf')
+
+# El LTO global de makepkg inyecta `-flto`; el perfil release del proyecto ya
+# hace su propio LTO (ver su Cargo.toml). Redundante acá.
+options=('!lto')
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Un paquete no se compila para la máquina que lo compila: el `rust.conf` de
+    # este host pone `target-cpu=native`, que emite AVX2/BMI2 y muere con SIGILL
+    # en cualquier CPU previa a 2013. `x86-64` es la línea base que todo 64 bits
+    # implementa. `CARGO_ENCODED_RUSTFLAGS` gana sobre `RUSTFLAGS` en cargo, así
+    # que hay que sacarlo o lo de abajo se ignora en silencio.
+    unset CARGO_ENCODED_RUSTFLAGS
+    export RUSTFLAGS="-C opt-level=3 -C target-cpu=x86-64"
+    export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
+    # `--locked`: un candado desfasado corta la compilación en vez de resolverse
+    # solo y en silencio. Dos builds del mismo commit dan el mismo binario, que
+    # en un auditor de seguridad es poder decir de qué código salió.
+    cargo build --release --locked -p linaudit
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # Config y waivers que lee el binario (ver `backup=()`).
+    install -Dm644 etc/config.toml  "$pkgdir/etc/linaudit/config.toml"
+    install -Dm644 etc/waivers.conf "$pkgdir/etc/linaudit/waivers.conf"
+
+    # Unit + timer de la auditoría periódica. `StateDirectory=linaudit` en el
+    # unit crea `/var/lib/linaudit`, así que no se arma acá.
+    install -Dm644 contrib/systemd/linaudit.service \
+        "$pkgdir/usr/lib/systemd/system/linaudit.service"
+    install -Dm644 contrib/systemd/linaudit.timer \
+        "$pkgdir/usr/lib/systemd/system/linaudit.timer"
+
+    # Manpages; la traducción al español va en su subdirectorio de locale.
+    install -Dm644 doc/linaudit.1    "$pkgdir/usr/share/man/man1/linaudit.1"
+    install -Dm644 doc/linaudit.es.1 "$pkgdir/usr/share/man/es/man1/linaudit.1"
+
+    install -Dm644 docs/CHECKS.md "$pkgdir/usr/share/doc/$pkgname/CHECKS.md"
+    install -Dm644 README.md      "$pkgdir/usr/share/doc/$pkgname/README.md"
+    install -Dm644 README.es.md   "$pkgdir/usr/share/doc/$pkgname/README.es.md"
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
