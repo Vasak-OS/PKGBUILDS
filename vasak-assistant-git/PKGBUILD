@@ -56,7 +56,9 @@ build() {
     export CARGO_BUILD_RUSTFLAGS="$RUSTFLAGS"
     # `--locked`: un candado desfasado corta la compilación en vez de resolverse
     # solo y en silencio.
-    cargo build --release --locked -p vasak-assistant-daemon
+    # El demonio y el broker de red (#6): el broker es el único proceso con red;
+    # el demonio le pide por un socket y no habla TCP.
+    cargo build --release --locked -p vasak-assistant-daemon -p vasak-assistant-broker
 }
 
 package() {
@@ -65,9 +67,14 @@ package() {
     # La puerta de vasak-keyring exige exactamente esta ruta, y que el binario
     # sea legible.
     install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+    # El broker de red (#6): el único proceso con AF_INET. El demonio
+    # (RestrictAddressFamilies=AF_UNIX) le pide por un socket de dominio Unix.
+    install -Dm755 "target/release/$pkgname-broker" "$pkgdir/usr/bin/$pkgname-broker"
 
     install -Dm644 "packaging/$pkgname.service" \
         "$pkgdir/usr/lib/systemd/user/$pkgname.service"
+    install -Dm644 "packaging/$pkgname-broker.service" \
+        "$pkgdir/usr/lib/systemd/user/$pkgname-broker.service"
 
     # Activación por D-Bus: quien le hable antes de que arranque la sesión
     # gráfica lo levanta. No se habilita nada a mano; la unidad lo hace con
