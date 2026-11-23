@@ -1,7 +1,7 @@
 # Maintainer: Joaquin (Pato) Decima <jdecima@vasak.net.ar>
 
 pkgname=vasak-splash
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Splash de arranque propio de VasakOS: dibuja el logo sobre DRM con dumb buffers, sin plymouth"
 arch=('x86_64')
@@ -16,6 +16,10 @@ makedepends=('git' 'cargo' 'rust')
 # El hook corre dentro del initramfs; lo rearma `mkinitcpio -P` desde el
 # .install, que también necesita el runtime de mkinitcpio.
 depends+=('mkinitcpio')
+# Excluyente con plymouth: los dos se meten como hook del initramfs y los dos
+# toman el master del DRM al arrancar, así que coexistir deja el logo colgado y
+# la pantalla en negro. vasak-splash reemplaza a plymouth, no convive con él.
+conflicts=('plymouth')
 source=("git+${url}.git")
 sha256sums=('SKIP')
 install="vasak-splash.install"
